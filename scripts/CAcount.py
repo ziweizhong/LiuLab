@@ -14,7 +14,7 @@ print(datetime.datetime.now())
 
 
 
-def mtAlign(data):
+def mtAlign(data, limitReads=1000000):
 	aligner = Align.PairwiseAligner()
 
 	BARCODE_SEQUENCE = Seq("aaatcataagaaattcgcNNNNNNNNNNNNNNTTAGCGAGCATATCTCTTC".upper(),generic_dna)
@@ -74,7 +74,7 @@ def mtAlign(data):
 			seqIn = line
 		elif r%4 == 2:
 			continue
-		elif r%4 == 3:
+		elif r%4 == 3 and r < limitReads:
 			# print("4")
 			try:
 				qualIn = line
