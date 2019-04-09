@@ -14,7 +14,8 @@ print(datetime.datetime.now())
 
 
 
-def mtAlign(data, limitReads=1000000):
+def mtAlign(data):
+	limitReads = 8000000
 	aligner = Align.PairwiseAligner()
 
 	BARCODE_SEQUENCE = Seq("aaatcataagaaattcgcNNNNNNNNNNNNNNTTAGCGAGCATATCTCTTC".upper(),generic_dna)
@@ -34,6 +35,22 @@ def mtAlign(data, limitReads=1000000):
 	i = 0
 	r = -1
 
+	sampleIndex = [(i+1) for i,a in enumerate(data) if a == '_']
+	if sampleIndex[0] == 9 and sampleIndex[1] == 1:
+		sampleNum = 6
+	else:
+		sampleNum = (int(data[sampleIndex[1]]) - 1) * 8 + int(data[sampleIndex[0]])
+
+	# print(data)
+	# print(sampleIndex[0])
+	# print(sampleIndex[1])
+	# print(sampleNum)
+
+	a = [2,7,13,19]
+	b = [3,8,14,20]
+	c = [4,9,15,21]
+	d = [5,10,16,22]
+	e = [6,11,12,17,18,23,24]
 
 	resultsDict = {}
 	resultsDictALL = {}
@@ -47,7 +64,22 @@ def mtAlign(data, limitReads=1000000):
 	mutPosV4 = [15, 37, 167, 185, 209]
 	mutPosV5 = [60, 71, 81, 107, 125, 127, 133]
 
-	mutPos = list(set(mutPosV1) | set(mutPosV2) | set(mutPosV3) | set(mutPosV4) | set(mutPosV5))
+	if sampleNum in a:
+		mutPos = mutPosV3
+	elif sampleNum in b:
+		mutPos = mutPosV1
+	elif sampleNum in c:
+		mutPos = mutPosV2
+	elif sampleNum in d:
+		mutPos = mutPosV4
+	elif sampleNum in e:
+		mutPos = mutPosV5
+	else:
+		mutPos = list(set(mutPosV1) | set(mutPosV2) | set(mutPosV3) | set(mutPosV4) | set(mutPosV5))
+
+
+
+
 
 	# print(mutPos)
 
