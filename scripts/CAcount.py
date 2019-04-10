@@ -62,7 +62,7 @@ def mtAlign(data):
 	mutPosV2 = [15, 55, 71, 72, 74, 92, 139, 190, 209, 235]
 	mutPosV3 = [7, 15, 36, 61, 124, 143, 207, 234]
 	mutPosV4 = [15, 37, 167, 185, 209]
-	mutPosV5 = [60, 71, 81, 107, 125, 127, 133]
+	mutPosV5 = [60, 71, 81, 107, 125, 127, 133, 235]
 
 	if sampleNum in a:
 		mutPos = mutPosV3
@@ -361,6 +361,8 @@ def mtAlign(data):
 					dictKey = ""
 					if len(ind) == 0:
 						dictKey = "WT"
+						dictKeyALL = "WT"
+						dictKeyLENIENT = "WT"
 					else:
 						for i in ind:
 							# print('%s%d%s' %(al3[i],i+1,al1[i]))
@@ -370,21 +372,21 @@ def mtAlign(data):
 						dictKey = dictKey[0:(len(dictKey)-1)]
 
 
-					# Generates the dictionary key for ALL mutations
-					dictKeyALL = ""
-					for i in ind:
-						dictKeyALL = dictKeyALL + str(i+1) + "-"
-					# print(dictKey[0:(len(dictKey)-1)])
-					dictKeyALL = dictKeyALL[0:(len(dictKeyALL)-1)]
+						# Generates the dictionary key for ALL mutations
+						dictKeyALL = ""
+						for i in ind:
+							dictKeyALL = dictKeyALL + str(i+1) + "-"
+						# print(dictKey[0:(len(dictKey)-1)])
+						dictKeyALL = dictKeyALL[0:(len(dictKeyALL)-1)]
 
-					# Generates the dictionary for LENIENT mutations
-					dictKeyLENIENT = ""
-					for i in ind:
-						# print('%s%d%s' %(al3[i],i+1,al1[i]))
-						if (i+1) in mutPosLenient:
-							dictKeyLENIENT = dictKeyLENIENT + str(i+1) + "-"
-					# print(dictKey[0:(len(dictKey)-1)])
-					dictKeyLENIENT = dictKeyLENIENT[0:(len(dictKeyLENIENT)-1)]
+						# Generates the dictionary for LENIENT mutations
+						dictKeyLENIENT = ""
+						for i in ind:
+							# print('%s%d%s' %(al3[i],i+1,al1[i]))
+							if (i+1) in mutPosLenient:
+								dictKeyLENIENT = dictKeyLENIENT + str(i+1) + "-"
+						# print(dictKey[0:(len(dictKey)-1)])
+						dictKeyLENIENT = dictKeyLENIENT[0:(len(dictKeyLENIENT)-1)]
 					
 
 

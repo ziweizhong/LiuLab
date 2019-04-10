@@ -17,6 +17,12 @@ dC = [12257,17125,20647,14510]
 eC = [22194,22814,15626,17654]
 fC = [22194,21371,13984,17074]
 
+mutPosV1 = [37, 71, 85, 124, 182, 209, 226]
+mutPosV2 = [15, 55, 71, 72, 74, 92, 139, 190, 209, 235]
+mutPosV3 = [7, 15, 36, 61, 124, 143, 207, 234]
+mutPosV4 = [15, 37, 167, 185, 209]
+mutPosV5 = [60, 71, 81, 107, 125, 127, 133]
+
 eSets = [a,b,c,d,e,f]
 
 def collateResults(indMatrix, sel = ''):
@@ -42,15 +48,11 @@ def collateResults(indMatrix, sel = ''):
 
 
 
-	#########################
-	#        SET A          #
-	#########################
-
-
 	results = {}
 
 	for i in range(0,len(dataA)):
 		# print(dataA[i])
+		print(dataA[i]["WT"])
 		for muts in dataA[i]:
 			if muts != '':
 				if muts in results:
@@ -64,10 +66,54 @@ def collateResults(indMatrix, sel = ''):
 				# results[muts] = {'count':dataA[i][muts]['count']}
 	return results
 
+def getMuts(muts,s):
+	if s == a:
+		mutPos = mutPosV3
+	elif s == b:
+		mutPos = mutPosV1
+	elif s == c:
+		mutPos = mutPosV2
+	elif s == d:
+		mutPos = mutPosV4
+	elif s == e or s == f:
+		mutPos = mutPosV5
+	else:
+		mutPos = []
+
+	mutPresence = np.zeros(len(mutPos))
+	if muts == 'WT':
+		return mutPresence
+	else:
+		sepPos = [i for i, a in enumerate(str(muts)) if a == '-']
+		# print (mutPos)
+		# print(int(muts))
+		if len(sepPos) == 0:
+			try:
+				mutInd = mutPos.index(int(muts))
+				mutPresence[mutPos.index(int(muts))] = 1
+			except:
+				pass
+		else:
+			mutsMtx = []
+			mutsMtx.append(int(muts[0:sepPos[0]]))
+			for i in range(0,len(sepPos)-1):
+				mutsMtx.append(int(muts[(sepPos[i]+1):sepPos[i+1]]))
+			mutsMtx.append(int(muts[(sepPos[len(sepPos)-1]+1):len(muts)]))
+			
+			for i in mutsMtx:
+				try:
+					mutInd = mutPos.index(i)
+					mutPresence[mutInd] = 1
+				except:
+					continue
+					
+
+	return mutPresence
+
 # print(results)
-if sys.argv[1] != '':
+try:
 	pickleSel = sys.argv[1].upper() + '.'
-else:
+except:	
 	pickleSel = ''
 
 print(pickleSel)
@@ -145,6 +191,11 @@ for s in eSets:
 				gen = [0.0,7.64,6.64,5.64]
 				
 				for muts in results:
+					mutMtx = getMuts(muts,s)
+					
+
+
+
 					freq = [0.0,0.0,0.0,0.0]
 					totalCount = 0
 					for i in results[muts]:		
