@@ -52,7 +52,7 @@ def collateResults(indMatrix, sel = ''):
 
 	for i in range(0,len(dataA)):
 		# print(dataA[i])
-		print(dataA[i]["WT"])
+		# print(dataA[i]["WT"])
 		for muts in dataA[i]:
 			if muts != '':
 				if muts in results:
@@ -66,19 +66,8 @@ def collateResults(indMatrix, sel = ''):
 				# results[muts] = {'count':dataA[i][muts]['count']}
 	return results
 
-def getMuts(muts,s):
-	if s == a:
-		mutPos = mutPosV3
-	elif s == b:
-		mutPos = mutPosV1
-	elif s == c:
-		mutPos = mutPosV2
-	elif s == d:
-		mutPos = mutPosV4
-	elif s == e or s == f:
-		mutPos = mutPosV5
-	else:
-		mutPos = []
+def getMuts(muts,mutPos):
+
 
 	mutPresence = np.zeros(len(mutPos))
 	if muts == 'WT':
@@ -118,90 +107,71 @@ except:
 
 print(pickleSel)
 
-# with open ('enrichData.txt','w') as out:
-# 	with open ('enrichDataValues.txt','w') as outVal:
-# 		for s in eSets:
-# 			results = collateResults(s,sel=pickleSel)
-# 			print(s)
-# 			out.write(str(s))
-# 			out.write(',--,--,---,---,')
-# 			out.write('\n')
-# 			counts = [1,1,1,1]
-
-# 			gen = [0.0,7.64,6.64,5.64]
-# 			if s == a:
-# 				counts = aC
-# 			elif s == b:
-# 				counts = bC
-# 			elif s == c:
-# 				counts = cC
-# 			elif s == d:
-# 				counts = dC
-# 			elif s == e:
-# 				counts = eC
-# 				gen = [0.0,6.64,5.64,5.64]
-# 			elif s == f:
-# 				counts = fC
-# 				gen = [0.0,6.64,5.64,5.64]
-
-# 			for muts in results:
-# 				freq = [0.0,0.0,0.0,0.0]
-# 				for i in results[muts]:		
-# 					out.write("%s,%d,%d,%f\n"%(muts,i,results[muts][i],results[muts][i]/counts[i]))
-# 					freq[i] = results[muts][i]/counts[i]
-
-# 				fit = np.polyfit(gen,freq,deg=1)
-# 				out.write("%s fitness:\t%f\n"%(str(muts),fit[0]))
-
-# 				outVal.write(str(muts))
-# 				outVal.write('\n')
-# 				outVal.write(str(gen)[1:len(str(gen))-1])
-# 				outVal.write('\n')
-# 				outVal.write(str(freq)[1:len(str(freq))-1])
-# 				outVal.write('\n')
-# 				outVal.write('int:\t%f\nslope:\t%f\n'%(fit[1],fit[0]))
 
 
 for s in eSets:
 	counts = [1,1,1,1]
+	gen = [0.0,7.64,6.64,5.64]
+
 	if s == a:
 		counts = aC
+		mutPos = mutPosV3
 	elif s == b:
 		counts = bC
+		mutPos = mutPosV1
 	elif s == c:
 		counts = cC
+		mutPos = mutPosV2
 	elif s == d:
 		counts = dC
+		mutPos = mutPosV4
 	elif s == e:
 		counts = eC
 		gen = [0.0,6.64,5.64,5.64]
+		mutPos = mutPosV5
 	elif s == f:
 		counts = fC
 		gen = [0.0,6.64,5.64,5.64]
+		mutPos = mutPosV5
 
 	with open ('%s-enrich.txt'%(str(s)),'w') as out:
 		with open ('%s-enrich-RAW.txt'%(str(s)),'w') as outVal:
-			with open ('%s-enrich-FITTED.txt'%(str(s)),'w') as outFit:
+			with open ('0Output-%s-enrich.txt'%(str(s)),'w') as outFit:
+				outFit.write("Name,Fitness,Total Count,Final Count,R-squared,Number of Mutations")
+				for i in range(0,len(mutPos)):
+					outFit.write(","+str(mutPos[i]))
+				outFit.write("\n")
+
 				results = collateResults(s,pickleSel)
 				print(s)
 				out.write(str(s))
 				out.write(',--,--,---,---,')
 				out.write('\n')
 				
-				gen = [0.0,7.64,6.64,5.64]
+				
 				
 				for muts in results:
-					mutMtx = getMuts(muts,s)
+					mutMtx = getMuts(muts,mutPos)
 					
 
 
 
 					freq = [0.0,0.0,0.0,0.0]
 					totalCount = 0
-					for i in results[muts]:		
+					if 1 in results[muts]:
+						finalCount = results[muts][1]
+					else:
+						finalCount = 0
+
+					if 0 in results[muts]:
+						initCount = results[muts][0]
+					else:
+						initCount = 0
+					for i in results[muts]:
 						out.write("%s,%d,%d,%f\n"%(muts,i,results[muts][i],results[muts][i]/counts[i]))
 						freq[i] = results[muts][i]/counts[i]
 						totalCount += results[muts][i]
+
 
 					fit = np.polyfit(gen,freq,deg=1)
 					slope, intercept, r_value, p_value, std_err = stats.linregress(gen, freq)
@@ -209,7 +179,11 @@ for s in eSets:
 
 					numMuts = len([i for i, a in enumerate(str(muts)) if a == '-']) + 1
 
-					outFit.write("%s\t%f\t%d\t%f\t%d\n"%(str(muts),slope,totalCount,r_value**2,numMuts))
+					outFit.write("%s,%f,%d,%d,%f,%d"%(str(muts),slope*100,totalCount,finalCount,r_value**2,numMuts))
+					for i in range(0,len(mutMtx)):
+						outFit.write(","+str(mutMtx[i]))
+					outFit.write("\n")
+
 
 					outVal.write(str(muts))
 					outVal.write('\n')
