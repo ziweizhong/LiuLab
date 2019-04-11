@@ -15,7 +15,7 @@ print(datetime.datetime.now())
 
 
 def mtAlign(data):
-	limitReads = 8000000
+	limitReads = 1000000000
 	aligner = Align.PairwiseAligner()
 
 	BARCODE_SEQUENCE = Seq("aaatcataagaaattcgcNNNNNNNNNNNNNNTTAGCGAGCATATCTCTTC".upper(),generic_dna)
@@ -36,7 +36,8 @@ def mtAlign(data):
 	r = -1
 
 	sampleIndex = [(i+1) for i,a in enumerate(data) if a == '_']
-	if sampleIndex[0] == 9 and sampleIndex[1] == 1:
+
+	if (int(data[sampleIndex[0]])) == 9 and int(data[sampleIndex[1]]) == 1:
 		sampleNum = 6
 	else:
 		sampleNum = (int(data[sampleIndex[1]]) - 1) * 8 + int(data[sampleIndex[0]])
@@ -259,8 +260,8 @@ def mtAlign(data):
 					try:
 						if str(al2) in ntDict:
 							HA2 = ntDict[str(al2)]
-							print(data)
-							print("USED DICTIONARY!!!")
+							# print(data)
+							# print("USED DICTIONARY!!!")
 						else:
 							al2OLD = al2
 
@@ -288,8 +289,9 @@ def mtAlign(data):
 									elif al1[i] == al1[i+1]:
 										continue
 					except:
-						print(data)
-						print("DICTIONARY ERROR!")
+						# print(data)
+						# print("DICTIONARY ERROR!")
+
 
 
 
@@ -322,8 +324,8 @@ def mtAlign(data):
 							al1 = aaDict[str(HA2_AA)]['al1']
 							al2 = aaDict[str(HA2_AA)]['al2']
 							al3 = aaDict[str(HA2_AA)]['al3']
-							print(data)
-							print("USED DICTIONARY!!!")
+							# print(data)
+							# print("USED DICTIONARY!!!")
 						else:
 							aln = pairwise2.align.localms(HA2_AA, HAref_AA, 1,-1, -10, -10)
 							# print (format_alignment(*aln[0]))
@@ -339,8 +341,9 @@ def mtAlign(data):
 
 							aaDict[str(HA2_AA)] = {'al1':al1,'al2':al2,'al3':al3} 
 					except:
-						print(data)
-						print("DICTIONARY ERROR!")
+						# print(data)
+						# print("DICTIONARY ERROR!")
+						pass
 
 					# with open ("temptest.txt",'a') as tempOut:
 					# 	tempOut.write (al1)

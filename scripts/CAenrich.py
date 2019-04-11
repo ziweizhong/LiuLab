@@ -25,12 +25,20 @@ mutPosV5 = [60, 71, 81, 107, 125, 127, 133]
 
 eSets = [a,b,c,d,e,f]
 
+
+#########################################
+#	Groups results based on which set 	#
+#	they belong to. For example, set a, #
+#	which includes wells 2, 7, 13 and 19#
+#	are all timepoints of the same 		#
+#	library. Thus, data from them are	#
+#	grouped.							#
+#########################################
 def collateResults(indMatrix, sel = ''):
 	dataA = []
 
 	for i in indMatrix:
 		index = [((i-1)%8)+1, int((i-1)/8+1)]
-		# print (index)
 		if index[0] == 6 and index[1] == 1:
 			with open('out.CA_9_1.fastq.%spickle'%(sel), 'rb') as handle:
 				print('out.CA_9_1.fastq.%spickle'%(sel))
@@ -42,40 +50,35 @@ def collateResults(indMatrix, sel = ''):
 				data = pickle.load(handle)
 			dataA.append(data)
 
-	# print(type(dataA))
-	# print(len(dataA))
-	# print(type(dataA[1]))
-
-
-
 	results = {}
 
 	for i in range(0,len(dataA)):
-		# print(dataA[i])
-		# print(dataA[i]["WT"])
 		for muts in dataA[i]:
 			if muts != '':
 				if muts in results:
 					results[muts][i] = dataA[i][muts]['count']
 				else:
 					results[muts] = {i:dataA[i][muts]['count']}
-				# print(type(results))
-				# print(type(dataA))
-				# print(muts)
-				# print(dataA[i][muts]['count'])
-				# results[muts] = {'count':dataA[i][muts]['count']}
 	return results
 
+
+
+
+
+
+#########################################################################
+#	Changes a string of mutations into an array with true				#
+#	or false based on the presence or absence of the mutation.			#
+#		For example, for mutPosV1 = [37, 71, 85, 124, 182, 209, 226]	#
+#		If the string is '37-209', the following array will be returned	#
+#		[1,0,0,0,0,1,0]
+#########################################################################
 def getMuts(muts,mutPos):
-
-
 	mutPresence = np.zeros(len(mutPos))
 	if muts == 'WT':
 		return mutPresence
 	else:
 		sepPos = [i for i, a in enumerate(str(muts)) if a == '-']
-		# print (mutPos)
-		# print(int(muts))
 		if len(sepPos) == 0:
 			try:
 				mutInd = mutPos.index(int(muts))
@@ -100,6 +103,16 @@ def getMuts(muts,mutPos):
 	return mutPresence
 
 # print(results)
+
+
+
+
+
+
+
+#########################################################################
+#	Start of actual script												#
+#########################################################################
 try:
 	pickleSel = sys.argv[1].upper() + '.'
 except:	
@@ -110,88 +123,87 @@ print(pickleSel)
 
 
 for s in eSets:
+	fitnessDict = {}
 	counts = [1,1,1,1]
 	gen = [0.0,7.64,6.64,5.64]
+
 
 	if s == a:
 		counts = aC
 		mutPos = mutPosV3
+		name = '2-7'
 	elif s == b:
 		counts = bC
 		mutPos = mutPosV1
+		name = '3-8'
 	elif s == c:
 		counts = cC
 		mutPos = mutPosV2
+		name = '4-9'
 	elif s == d:
 		counts = dC
 		mutPos = mutPosV4
+		name = '5-10'
 	elif s == e:
 		counts = eC
 		gen = [0.0,6.64,5.64,5.64]
 		mutPos = mutPosV5
+		name = '6-11'
 	elif s == f:
 		counts = fC
 		gen = [0.0,6.64,5.64,5.64]
 		mutPos = mutPosV5
+		name = '6-12'
 
-	with open ('%s-enrich.txt'%(str(s)),'w') as out:
-		with open ('%s-enrich-RAW.txt'%(str(s)),'w') as outVal:
-			with open ('0Output-%s-enrich.txt'%(str(s)),'w') as outFit:
-				outFit.write("Name,Fitness,Total Count,Final Count,R-squared,Number of Mutations")
-				for i in range(0,len(mutPos)):
-					outFit.write(","+str(mutPos[i]))
-				outFit.write("\n")
+	# with open ('%s-enrich.txt'%(str(s)),'w') as out:
+		# with open ('%s-enrich-RAW.txt'%(str(s)),'w') as outVal:
+	with open ('0Output-%s-enrich.txt'%(str(s)),'w') as outFit:
+		outFit.write("Name,Fitness,Count t0, Count t1, Count t2, Count t3, Final Count,R-squared,Number of Mutations")
+		for i in range(0,len(mutPos)):
+			outFit.write(","+str(mutPos[i]))
+		outFit.write("\n")
 
-				results = collateResults(s,pickleSel)
-				print(s)
-				out.write(str(s))
-				out.write(',--,--,---,---,')
-				out.write('\n')
-				
-				
-				
-				for muts in results:
-					mutMtx = getMuts(muts,mutPos)
-					
+		results = collateResults(s,pickleSel)
+		print(s)
+		# out.write(str(s))
+		# out.write(',--,--,---,---,')
+		# out.write('\n')
+		
+		
+		
+		for muts in results:
+			mutMtx = getMuts(muts,mutPos)
+			
+			freq = [0.0,0.0,0.0,0.0]
+			counts2 = [0,0,0,0]
+			totalCount = 0
 
-
-
-					freq = [0.0,0.0,0.0,0.0]
-					totalCount = 0
-					if 1 in results[muts]:
-						finalCount = results[muts][1]
-					else:
-						finalCount = 0
-
-					if 0 in results[muts]:
-						initCount = results[muts][0]
-					else:
-						initCount = 0
-					for i in results[muts]:
-						out.write("%s,%d,%d,%f\n"%(muts,i,results[muts][i],results[muts][i]/counts[i]))
-						freq[i] = results[muts][i]/counts[i]
-						totalCount += results[muts][i]
+			for i in results[muts]:
+				# out.write("%s,%d,%d,%f\n"%(muts,i,results[muts][i],results[muts][i]/counts[i]))
+				freq[i] = results[muts][i]/counts[i]
+				totalCount += results[muts][i]
+				counts2[i] = results[muts][i]
 
 
-					fit = np.polyfit(gen,freq,deg=1)
-					slope, intercept, r_value, p_value, std_err = stats.linregress(gen, freq)
-					out.write("%s fitness:\t%f\n"%(str(muts),fit[0]))
+			fit = np.polyfit(gen,freq,deg=1)
+			slope, intercept, r_value, p_value, std_err = stats.linregress(gen, freq)
+			# out.write("%s fitness:\t%f\n"%(str(muts),fit[0]))
 
-					numMuts = len([i for i, a in enumerate(str(muts)) if a == '-']) + 1
+			numMuts = len([i for i, a in enumerate(str(muts)) if a == '-']) + 1
 
-					outFit.write("%s,%f,%d,%d,%f,%d"%(str(muts),slope*100,totalCount,finalCount,r_value**2,numMuts))
-					for i in range(0,len(mutMtx)):
-						outFit.write(","+str(mutMtx[i]))
-					outFit.write("\n")
+			outFit.write("%s,%f,%d,%d,%d,%d,%d,%f,%d"%(str(muts),slope*100,counts2[0], counts2[3], counts2[2], counts2[1],totalCount,r_value**2,numMuts))
+			for i in range(0,len(mutMtx)):
+				outFit.write(","+str(mutMtx[i]))
+			outFit.write("\n")
 
 
-					outVal.write(str(muts))
-					outVal.write('\n')
-					outVal.write(str(gen)[1:len(str(gen))-1])
-					outVal.write('\n')
-					outVal.write(str(freq)[1:len(str(freq))-1])
-					outVal.write('\n')
-					outVal.write('int:\t%f\nslope:\t%f\n'%(fit[1],fit[0]))
+			# outVal.write(str(muts))
+			# outVal.write('\n')
+			# outVal.write(str(gen)[1:len(str(gen))-1])
+			# outVal.write('\n')
+			# outVal.write(str(freq)[1:len(str(freq))-1])
+			# outVal.write('\n')
+			# outVal.write('int:\t%f\nslope:\t%f\n'%(fit[1],fit[0]))
 
 
 
