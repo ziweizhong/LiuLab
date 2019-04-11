@@ -26,7 +26,7 @@ def getFitness(muts,setName):
 
 	return fitness
 
-def getColor(value,*,minV = -.12,maxV = .7,colorMin = 'ed6e93',colorMax = '40b43c'):
+def getColor(value,*,minV = -.05,maxV = .4,colorMin = 'ed6e93',colorMax = '40b43c'):
 
 
 	rMin = int(colorMin[0:2],16)
@@ -166,7 +166,7 @@ wtFitness = getFitness('WT',currSet)
 # color will be : #f0e3ff
 graph.node('WT','WT\n%.4f'%(wtFitness),fillcolor=getColor(wtFitness),style='filled')
 
-graph = addNodesALL('WT',graph,m,currSet)
+graph = addNodes('WT',graph,m,currSet)
 
 # print(graph.source)
-graph.render('graph2ALL')
+graph.render('3-8')
