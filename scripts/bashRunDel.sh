@@ -6,5 +6,6 @@
 #$ -R y
 
 module load anaconda/3.7-5.3.0
-cp /pub/ziweiz2/LiuLab/scripts/$1.py . 
-python $1.py $2 $3
+cp /pub/ziweiz2/LiuLab/scripts/$1 . 
+python $@
+rm ./$1

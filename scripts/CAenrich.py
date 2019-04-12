@@ -21,7 +21,7 @@ mutPosV1 = [37, 71, 85, 124, 182, 209, 226]
 mutPosV2 = [15, 55, 71, 72, 74, 92, 139, 190, 209, 235]
 mutPosV3 = [7, 15, 36, 61, 124, 143, 207, 234]
 mutPosV4 = [15, 37, 167, 185, 209]
-mutPosV5 = [60, 71, 81, 107, 125, 127, 133]
+mutPosV5 = [60, 71, 81, 107, 125, 127, 133, 235]
 
 eSets = [a,b,c,d,e,f]
 
@@ -39,6 +39,7 @@ def collateResults(indMatrix, sel = ''):
 
 	for i in indMatrix:
 		index = [((i-1)%8)+1, int((i-1)/8+1)]
+		# print(index)
 		if index[0] == 6 and index[1] == 1:
 			with open('out.CA_9_1.fastq.%spickle'%(sel), 'rb') as handle:
 				print('out.CA_9_1.fastq.%spickle'%(sel))
@@ -127,7 +128,6 @@ for s in eSets:
 	counts = [1,1,1,1]
 	gen = [0.0,7.64,6.64,5.64]
 
-
 	if s == a:
 		counts = aC
 		mutPos = mutPosV3
@@ -155,21 +155,14 @@ for s in eSets:
 		mutPos = mutPosV5
 		name = '6-12'
 
-	# with open ('%s-enrich.txt'%(str(s)),'w') as out:
-		# with open ('%s-enrich-RAW.txt'%(str(s)),'w') as outVal:
 	with open ('0Output-%s-enrich.txt'%(str(s)),'w') as outFit:
-		outFit.write("Name,Fitness,Count t0, Count t1, Count t2, Count t3, Final Count,R-squared,Number of Mutations")
+		outFit.write("Name,Fitness,Count t0,Count t1,Count t2,Count t3,Total Count,R-squared,Number of Mutations")
 		for i in range(0,len(mutPos)):
 			outFit.write(","+str(mutPos[i]))
 		outFit.write("\n")
 
 		results = collateResults(s,pickleSel)
 		print(s)
-		# out.write(str(s))
-		# out.write(',--,--,---,---,')
-		# out.write('\n')
-		
-		
 		
 		for muts in results:
 			mutMtx = getMuts(muts,mutPos)
@@ -179,7 +172,6 @@ for s in eSets:
 			totalCount = 0
 
 			for i in results[muts]:
-				# out.write("%s,%d,%d,%f\n"%(muts,i,results[muts][i],results[muts][i]/counts[i]))
 				freq[i] = results[muts][i]/counts[i]
 				totalCount += results[muts][i]
 				counts2[i] = results[muts][i]
@@ -187,7 +179,6 @@ for s in eSets:
 
 			fit = np.polyfit(gen,freq,deg=1)
 			slope, intercept, r_value, p_value, std_err = stats.linregress(gen, freq)
-			# out.write("%s fitness:\t%f\n"%(str(muts),fit[0]))
 
 			numMuts = len([i for i, a in enumerate(str(muts)) if a == '-']) + 1
 
@@ -196,39 +187,8 @@ for s in eSets:
 				outFit.write(","+str(mutMtx[i]))
 			outFit.write("\n")
 
+			fitnessDict[muts] = slope*100
 
-			# outVal.write(str(muts))
-			# outVal.write('\n')
-			# outVal.write(str(gen)[1:len(str(gen))-1])
-			# outVal.write('\n')
-			# outVal.write(str(freq)[1:len(str(freq))-1])
-			# outVal.write('\n')
-			# outVal.write('int:\t%f\nslope:\t%f\n'%(fit[1],fit[0]))
-
-
-
-
-# for k in range(1,4):
-# 	row = []
-
-# 	for j in range(1,9):
-# 		run = 1
-
-# 		print("%d %d"%(k,j))
-
-# 		if j == 1 and k == 1:
-# 			run = 0
-# 			row.append({})
-# 		elif j == 6 and k == 1:
-# 			with open('out.CA_9_1.fastq.pickle', 'rb') as handle:
-# 				data = pickle.load(handle)
-# 			row.append(data)
-# 		else:
-# 			with open('out.CA_%d_%d.fastq.pickle'%(j,k), 'rb') as handle:
-# 				data = pickle.load(handle)
-# 			row.append(data)
-
-
-
-
+	with open('fitness-'+name+'.pickle', 'wb') as handle:
+		pickle.dump(fitnessDict, handle)
 
