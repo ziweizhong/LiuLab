@@ -26,6 +26,28 @@ def getName(muts):
 	return name
 
 
+
+def cleanName(muts):
+	sepPos = [i for i, a in enumerate(str(muts)) if a == '-']
+	if len(sepPos) == 0:
+		name = muts
+	else:
+		mutsMtx = []
+		mutsMtx.append(int(muts[0:sepPos[0]]))
+		for i in range(0,len(sepPos)-1):
+			mutsMtx.append(int(muts[(sepPos[i]+1):sepPos[i+1]]))
+		mutsMtx.append(int(muts[(sepPos[len(sepPos)-1]+1):len(muts)]))
+		
+		mutsMtx.sort()
+
+		name = ''
+		for i in mutsMtx:
+			name += (str(i) + "-")
+
+		name = name[0:len(name)-1]
+
+	return name
+
 def getFitness(muts,setName):
 	name = getName(muts)
 
@@ -155,6 +177,7 @@ def addNodes(currentNode,graph,remain,setName):
 				elif arrowWidth < 1:
 					arrowWidth  = 1
 				arrowWidth = str(arrowWidth)
+				arrowWidth = '1'
 
 				simpleNextName = getName(nextNode)
 				simpleCurrentName = getName(currentNode)
@@ -245,8 +268,70 @@ def addNodes2(currentNode,graph,remain,setName,addedDict):
 				# addedDict[nextNode]['ChanceValue'] += addedDict[getName(currentNode)]['ChanceValue'] * edgeWeights[i] / np.sum(edgeWeights)
 
 
+#Start from arbitrary point, not just WT
+def addNodes3(currentNode,graph,remain,setName):
+	remaining = remain.copy()
+	# print("remaining: %s"%remaining)
+	# print("len(remaning): %d"%(len(remaining)))
+	if len(remaining) > 0:
+		# print("len(remaning) 2: %d"%(len(remaining)))
+		isEnd = np.zeros(len(remaining))
+
+		for i in range(0,len(remaining)):
+			# print("i: %d"%i)
+			# print("currentNode: %s\tremaining: %s"%(currentNode,remaining))
+			nextNode = currentNode + "-" + str(remaining[i])
+
+			print("currentNode: %s\nNextNode: %s\ngetName:%s"%(currentNode,nextNode,cleanName(currentNode)))
+
+			nextFitness = getFitness2(cleanName(nextNode),setName)
+			currentFitness = getFitness2(cleanName(currentNode),setName)
+			# print(nextNode)
+			# print(nextFitness)
+
+			print("currentFitness: %s\nNextFitness: %s\n"%(currentFitness,nextFitness))
+
+			if (nextFitness > currentFitness):
+				isEnd[i] = 1
+				arrowColor = 'black'
+				arrowWidth = int((nextFitness - currentFitness)*20)
+				if arrowWidth > 15:
+					arrowWidth = 15
+				elif arrowWidth < 1:
+					arrowWidth  = 1
+				arrowWidth = str(arrowWidth)
+				arrowWidth = '1'
 
 
+				print(nextNode)
+
+				graph.node(nextNode,nextNode+'\n%.4f'%(nextFitness),fillcolor=getColor(nextFitness),style='filled')
+				# graph.node(simpleNextName)
+				graph.edge(currentNode,nextNode,color=arrowColor,penwidth=arrowWidth)
+				# graph.edge(simpleCurrentName,simpleNextName)
+
+				nextSet = remaining.copy()
+				nextSet.remove(remaining[i])
+
+				graph = addNodes3(nextNode,graph,nextSet,setName)
+
+		if isEnd.max() < 1:
+			#CHECK THE SYNTAX
+			# print("AAA%s"%currentNode)
+			currentNodeName = getName(currentNode)
+			if currentNodeName in countDict:
+				countDict[currentNodeName] += 1
+			else:
+				countDict[currentNodeName] = 1
+	else:
+		# print("BBB%s"%currentNode)
+		currentNodeName = getName(currentNode)
+		if currentNodeName in countDict:
+			countDict[currentNodeName] += 1
+		else:
+			countDict[currentNodeName] = 1
+
+	return graph
 
 
 
@@ -301,11 +386,11 @@ currSet = setB
 
 currSet = setE
 graph = Digraph(comment='Graph Title')
-wtFitness = getFitness('WT-71',currSet)
+wtFitness = getFitness2('71',currSet)
 addedDict['71'] = {'ChanceValue':1}
 # color will be : #f0e3ff
 graph.node('71','71\n%.4f'%(wtFitness),fillcolor=getColor(wtFitness),style='filled')
-addNodes('WT-71',graph,[60, 81, 107, 125, 127, 133, 235],setE)
+addNodes3('71',graph,[60, 81, 107, 125, 127, 133, 235],setE)
 
 graph.render('6-11_71')
 
