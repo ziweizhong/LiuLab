@@ -11,3 +11,6 @@ eVOLVER.py and custom_script.py are meant to be run together to enable electron-
 gen_json.py generates the od_cal.json file after generation of raw calibration data from eVOLVER.py and custom_script.py
   - raw OD file and measured OD values will have to be manually entered into the code
 
+Power sweep contains the eVOLVER.py and custom_script.py file that allows the generation of Detector values vs LED power for all vials
+  - please note that the output file has incorrect naming of power values, they need to be offset by 4 (e.g. row 12 has the power level stated in row 8)
+    - This bug will hopefully be fixed in a later release
