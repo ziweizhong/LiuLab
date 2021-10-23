@@ -1,0 +1,12 @@
+Files for calibration of eVOLVER
+
+calibration.py has been updated to enable new fitting methods
+
+calibration-stacked.py and stackplot.py are very crude scripts to enable plot overlays from multiple calibration experiments
+
+eVOLVER.py and custom_script.py are meant to be run together to enable electron-GUI-less generation of raw calibration data
+  - PLEASE NOTE: for this script, it will ask you to save data. ONLY SAVE THE DATA WHEN YOU SEE IT APPEAR AFTER A DELAY.
+  - This is due to the stacking mechanism of eVOLVER broadcasts every 20 seconds, thus to ensure that the data is refreshed and reflects the correct vials.
+  - Also note that the script has output bugs, but note that 16 values need to be saved.
+gen_json.py generates the od_cal.json file after generation of raw calibration data from eVOLVER.py and custom_script.py
+
