@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+Please note that the power in the output file is incorrect.
+The power for a given row in four rows too high: e.g. The power noted in row 8 is actually reflective of the data in row 12.
+Bug fix incoming...
+"""
+
 
 import os
 import sys
@@ -100,7 +106,7 @@ class EvolverNamespace(BaseNamespace):
         # set power levels
 
 
-        if (counter % 20) == 0:
+        if (counter % 30) == 0:
             if pwr > 4000:
                 pwr = pwr % 4000
             power_levels = [pwr] * 16
