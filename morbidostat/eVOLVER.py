@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 2021-10-23 change logs
 - added the ability to change power levels
