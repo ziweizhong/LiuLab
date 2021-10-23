@@ -8,7 +8,9 @@ eVOLVER.py and custom_script.py are meant to be run together to enable electron-
   - PLEASE NOTE: for this script, it will ask you to save data. ONLY SAVE THE DATA WHEN YOU SEE IT APPEAR AFTER A DELAY.
   - This is due to the stacking mechanism of eVOLVER broadcasts every 20 seconds, thus to ensure that the data is refreshed and reflects the correct vials.
   - Also note that the script has output bugs, but note that 16 points need to be saved.
-  - This script is for OD data only. Currently, there is no plan to implement temperature calibration, as these values are generally stable and use of the electron-GUI once for generation is not overly burdensome
+  - This script is for OD data only and does not take replicate values. 
+  - Currently, there is no plan to implement temperature calibration, as these values are generally stable and use of the electron-GUI once for generation is not overly burdensome
+  
 gen_json.py generates the od_cal.json file after generation of raw calibration data from eVOLVER.py and custom_script.py
   - raw OD file and measured OD values will have to be manually entered into the code
 
