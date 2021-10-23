@@ -1,1 +1,14 @@
 Scripts to enable morbidostat on eVOLVER2.0 from FynchBio
+
+2021-10-23 eVOLVER.py change logs
+- added the ability to change power levels
+- edited so that the only vials to save data from are the active vials in the experiment
+- added the ability to accept and interpreet linear_od and exp calibration files for OD
+- added the ability to reject the active calibration from eVOLVER
+- added directories and files to store PID controller files (growth_rate, drug_log, PID_log, offset_log)
+- changed socketIO.wait(seconds = x), from x to 0.1 to 0.5 to allow for longer scripts to still pass on dilution messages
+
+2021-10-23 custom_script.py change logs
+- added initial power levels
+- added additional operational mode for morbidostat
+- added GLOBAL_VIALS parameter to set active vials
