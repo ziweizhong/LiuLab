@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
+
 """
-2021-10-23 change logs
+2021-10-24 change log
+- added confirmed_pump_log.txt file upon new experiment
+
+2021-10-23 change log
 - added the ability to change power levels
 - edited so that the only vials to save data from are the active vials in the experiment
 - added the ability to accept and interpreet linear_od and exp calibration files for OD
@@ -535,6 +539,11 @@ class EvolverNamespace(BaseNamespace):
                 text_file.write("0,0\n0,0\n")
                 text_file.close()
 
+                log_path = "%s/pump_log/confirmed_pump_log.txt" % (dir_path,x)
+                text_file = open(log_path,"w")
+                text_file.write("0,0\n0,0\n")
+                text_file.close()
+
                 # END mstat file updating
 
             # make GLOBAL log and pump log file
@@ -549,6 +558,10 @@ class EvolverNamespace(BaseNamespace):
             text_file.write("0,0\n0,0\n")
             text_file.close()
 
+            pump_path =  "%s/pump_log/confirmed_pump_log.txt" % (dir_path)
+            text_file = open(pump_path,"w")
+            text_file.write("0,0,0\n0,0,0\n")
+            text_file.close()
 
             self.update_stir_rate(STIR_INITIAL)
             self.update_led_power(POWER_INITIAL)
@@ -784,7 +797,7 @@ if __name__ == '__main__':
     while True:
         try:
             # infinite loop
-            socketIO.wait(seconds=0.5)
+            socketIO.wait(seconds=1)
             if time.time() - reset_connection_timer > 3600:
                 # reset connection to avoid buildup of broadcast
                 # messages (unlikely but could happen for very long
