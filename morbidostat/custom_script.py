@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-2021-10-23 change logs
+2021-10-24 change log
+- create a confirmation for pumps were run, and resends the message if they were not
+
+2021-10-23 change log
 - added initial power levels
 - added additional operational mode for morbidostat
 - added GLOBAL_VIALS parameter to set active vials
@@ -90,6 +93,66 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
         data = np.genfromtxt(filePath, delimiter=',')
         lastPump = data[len(data)-1][0]
 
+        confirmedPumpPath =  "%s/%s/pump_log/confirmed_pump_log.txt" % (savePath,EXP_NAME)
+        data = np.genfromtxt(confirmedPumpPath, delimiter=',')
+        lastConfirmedPump = data[len(data)-1][0]
+
+        if (lastPump - lastConfirmedPump)*3600 > 0 and (elapsed_time - lastPump)*3600 > 120:
+            print("Last pump:%f"%lastPump)
+            print("Last confirmed pump:%f"%lastConfirmedPump)
+            message_file_path = "%s/%s/lastMessage.txt" % (savePath,EXP_NAME)
+            message_file = open(message_file_path,'r')
+            MESSAGE = message_file.read().strip().split(',')
+            message_file.close()
+
+            if MESSAGE == ['--'] * 48:
+                #write current time as last confirmed pump
+                confirmedPumpPath =  "%s/%s/pump_log/confirmed_pump_log.txt" % (savePath,EXP_NAME)
+                confirmedPumpFile = open(confirmedPumpPath,'a+')
+                confirmedPumpFile.write("%f,%f\n"%(elapsed_time,elapsed_time))
+                confirmedPumpFile.close()
+            else:
+                # get vials that were diluted
+                dilutedVialsPath = "%s/%s/dilutedVials.txt" % (savePath,EXP_NAME)
+                dilutedVialsFile = open(dilutedVialsPath,'r')
+                dilutedVials = dilutedVialsFile.read().strip().split(',')
+                dilutedVials = list(filter(None,dilutedVials))
+                dilutedVialsFile.close()
+
+                # obtains the first vial that underwent dilution
+                ODPath =  "%s/%s/OD/vial%d_OD.txt" % (savePath,EXP_NAME,int(dilutedVials[0]))
+                ODData = np.genfromtxt(ODPath, delimiter=',')
+
+                # finds the index of the last dilution
+                timeData = ODData[:,0]
+                idx = np.searchsorted(timeData,lastPump,side="left")
+
+                # determine OD before the last dilutions
+                od_before = np.mean(ODData[(idx-4):idx,1])
+                # determine OD after the last dilution
+                od_after = np.mean(ODData[(idx+2):(idx+5),1])
+                print("OD before: %f" %od_before)
+                print("OD after: %f" %od_after)
+                # checks that OD went down after dilution
+                if od_after / od_before < 0.95:
+                    # dilution occurred
+                    print("Dilution confirmed!")
+                    # write current time as last confirmed pump
+                    confirmedPumpPath =  "%s/%s/pump_log/confirmed_pump_log.txt" % (savePath,EXP_NAME)
+                    confirmedPumpFile = open(confirmedPumpPath,'a+')
+                    confirmedPumpFile.write("%f,%f\n"%(elapsed_time,elapsed_time))
+                    confirmedPumpFile.close()
+                else:
+                    # dilution did not occur
+                    # resend message for dilutionsif MESSAGE != ['--'] * 48:
+                    print("Dilution command resent!")
+                    eVOLVER.fluid_command(MESSAGE)
+
+                    # Updates pump file
+                    pumpPath =  "%s/%s/pump_log/vial00_pump_log.txt" % (savePath,EXP_NAME)
+                    pumpFile = open(pumpPath,"a+")
+                    pumpFile.write("%f,%f\n" %  (elapsed_time,elapsed_time))
+                    pumpFile.close()
 
         # if enough time passed for the next dilution to occur
         if ((elapsed_time - lastPump)*3600) > (TIME_BETWEEN_DILUTIONS * 60): # convert to seconds and compare
@@ -97,6 +160,7 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
             #cleanCommand = 0;
 
             MESSAGE = ['--'] * 48
+            dilutedVials = []
 
             for x in mstat_vials:
                 #pumpCommand = 0
@@ -326,6 +390,8 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                     MESSAGE[x+32] = str(numDils * VOLUME_PER_DILUTION * (PIDControl))
                     # Efflux pump
                     MESSAGE[x+16] = str(numDils * VOLUME_PER_DILUTION + 5)
+
+                    dilutedVials.append(str(x))
                     """
                     # OLD DILUTION COMMAND
                     # Sends dilution command to RaspberryPi
@@ -426,10 +492,26 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
             print(MESSAGE[0:4])
             print(MESSAGE[16:20])
             print(MESSAGE[32:36])
-            #print("PLEASE NOTE: EVOLVER IS NOT DILUTING!!!")
+
+            messagePath =  "%s/%s/lastMessage.txt" % (savePath,EXP_NAME)
+            text_file = open(messagePath,"w")
+            for index in range(0,48):
+                if index != 47:
+                    text_file.write(MESSAGE[index]+',')
+                else:
+                    text_file.write(MESSAGE[index])
+            text_file.close()
+
+            dilutedVialsPath =  "%s/%s/dilutedVials.txt" % (savePath,EXP_NAME)
+            text_file = open(dilutedVialsPath,"w")
+            for item in dilutedVials:
+                text_file.write(item+',')
+            text_file.close()
+
             if MESSAGE != ['--'] * 48:
                 print("Dilution performed!")
                 eVOLVER.fluid_command(MESSAGE)
+
 
                 # Updates pump file
             pumpPath =  "%s/%s/pump_log/vial00_pump_log.txt" % (savePath,EXP_NAME)
