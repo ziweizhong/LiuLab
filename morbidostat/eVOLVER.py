@@ -539,7 +539,7 @@ class EvolverNamespace(BaseNamespace):
                 text_file.write("0,0\n0,0\n")
                 text_file.close()
 
-                log_path = "%s/pump_log/confirmed_pump_log.txt" % (dir_path,x)
+                log_path = "%s/pump_log/confirmed_pump_log.txt" % (dir_path)
                 text_file = open(log_path,"w")
                 text_file.write("0,0\n0,0\n")
                 text_file.close()
