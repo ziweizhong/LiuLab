@@ -10,6 +10,7 @@
 
 Possible things to update in the future:
 - robust curve fitting (not working for non-linear curves)
+- robust curve fitting does not appear to be better than regular curve fitting
 """
 import numpy as np
 import logging
@@ -109,7 +110,7 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                 #write current time as last confirmed pump
                 confirmedPumpPath =  "%s/%s/pump_log/confirmed_pump_log.txt" % (savePath,EXP_NAME)
                 confirmedPumpFile = open(confirmedPumpPath,'a+')
-                confirmedPumpFile.write("%f,%f\n"%(elapsed_time,elapsed_time))
+                confirmedPumpFile.write("%f,%f,%f\n"%(elapsed_time,od_before, od_after))
                 confirmedPumpFile.close()
             else:
                 # get vials that were diluted
@@ -140,7 +141,7 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                     # write current time as last confirmed pump
                     confirmedPumpPath =  "%s/%s/pump_log/confirmed_pump_log.txt" % (savePath,EXP_NAME)
                     confirmedPumpFile = open(confirmedPumpPath,'a+')
-                    confirmedPumpFile.write("%f,%f\n"%(elapsed_time,elapsed_time))
+                    confirmedPumpFile.write("%f,%f,%f\n"%(elapsed_time,od_before, od_after))
                     confirmedPumpFile.close()
                 else:
                     # dilution did not occur
