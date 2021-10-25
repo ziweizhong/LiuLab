@@ -265,6 +265,7 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                     print("Robust growth rate calculation: %.4f" %(param_robust.x[1]))
 
                     growth_rate = param[1]
+                    #growth_rate = param.robust.x[1]
 
                 # If the vial has been below the dilution OD for 4 rounds, and the culture has been growning for a while:
                 # Dilute with no drug media to wash out drug.
@@ -700,7 +701,7 @@ def exp_func(x, a, b):
 
 def exp_func_robust(param,x,y):
     # exponential function for robust fit
-    return a * np.exp(b * x) - y
+    return param[0] * np.exp(param[1] * x) - y
 
 if __name__ == '__main__':
     print('Please run eVOLVER.py instead')
