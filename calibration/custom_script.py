@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 ##### USER DEFINED GENERAL SETTINGS #####
 
 #set new name for each experiment, otherwise files will be overwritten
-EXP_NAME = 'expt_ZZ_20211021_test_04'
+EXP_NAME = 'expt_ZZ_20211021_OD_calibration'
 EVOLVER_IP = '10.0.0.3'
 EVOLVER_PORT = 8081
 
@@ -37,7 +37,7 @@ PUMP_CAL_FILE = 'pump_cal.txt' #tab delimited, mL/s with 16 influx pumps on firs
 OPERATION_MODE = 'calibrate_OD' # TURBIDOSTAT AND CHEMOSTAT FUNCTION HAS BEEN REMOVED FROM THIS VERSION
 # if using a different mode, name your function as the OPERATION_MODE variable
 
-GLOBAL_VIALS = [8,9,10,11]
+GLOBAL_VIALS = range(0,16)
 
 ##### END OF USER DEFINED GENERAL SETTINGS #####
 
@@ -69,11 +69,11 @@ def calibrate_OD(eVOLVER, input_data, vials, elapsed_time):
                     counter = old_data.shape[0]
                 print("\n\n___________________________________________________________")
                 print ("Data %d of 16 saved!"% counter+1)
-                print("Please advance all vails by 1 and move last vial to first vial")
+                if counter < 15:
+                    print("Please advance all vails by 1 and move last vial to first vial")
         else:
             print("Data not saved! Please reobtain the data!")
         if old_data.ndim < 2 or old_data.shape[0] < 15:
-            input("Press enter when ready...")
             input("Press enter when ready...")
             print("Waiting for data...")
     else:
