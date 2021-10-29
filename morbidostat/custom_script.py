@@ -385,6 +385,8 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                     d_err = 0
                     pid_offset[x] = 0
                     pid_control = 0
+                    new_d_err = 0
+                    gr_smooth = 0
 
                 # 1. Update GR file with current GR
                 GRFile = open(gr_path,"a+")
