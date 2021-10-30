@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """
+2021-10-25 change log
+- added smoothing for growth rate and therefore, d e(t)/dt, but this calculation has not been implemented
+- Question: Is it ok that the derivative error in the PID be based on two timepoints prior?
+
 2021-10-24 change log
 - create a confirmation for pumps were run, and resends the message if they were not
 
@@ -9,7 +13,7 @@
 - added GLOBAL_VIALS parameter to set active vials
 
 Possible things to update in the future:
-- robust curve fitting (not working for non-linear curves)
+- robust curve fitting
 """
 import numpy as np
 import logging
@@ -28,7 +32,7 @@ logger = logging.getLogger(__name__)
 ##### USER DEFINED GENERAL SETTINGS #####
 
 #set new name for each experiment, otherwise files will be overwritten
-EXP_NAME = 'expt_ZZ_20211023_test_05'
+EXP_NAME = 'expt_CV_TA_test'
 EVOLVER_IP = '10.0.0.3'
 EVOLVER_PORT = 8081
 
@@ -49,7 +53,7 @@ PUMP_CAL_FILE = 'pump_cal.txt' #tab delimited, mL/s with 16 influx pumps on firs
 OPERATION_MODE = 'morbidostat' # TURBIDOSTAT AND CHEMOSTAT FUNCTION HAS BEEN REMOVED FROM THIS VERSION
 # if using a different mode, name your function as the OPERATION_MODE variable
 
-GLOBAL_VIALS = [0,2]
+GLOBAL_VIALS = [8,9,10,11]
 
 ##### END OF USER DEFINED GENERAL SETTINGS #####
 
@@ -62,12 +66,12 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
 
     # Global paramemters for PID
     VOLUME =  30.0                              # Volume assumed for dilution events (mL)
-    DILUTION_OD = 1                         # OD at which dilutions start occurring
-    MAX_OD = 2.0                                # High OD safeguard to prevent culture from leaving linear range
-    SUPER_OD = 3.0
+    DILUTION_OD = .4                         # OD at which dilutions start occurring
+    MAX_OD = 1.0                                # High OD safeguard to prevent culture from leaving linear range
+    SUPER_OD = 1.5
     DOUBLING_TIME = 6.0                         # User defined target doubling time
     TARGET_GR = math.log(2.0)/DOUBLING_TIME     # Calculated based off the user defined doubling time
-    STEPS_PER_HOUR = 4                          # User defined number of dilution events per hour. Volumes are adjusted accordingly
+    STEPS_PER_HOUR = 1                          # User defined number of dilution events per hour. Volumes are adjusted accordingly
     DILUTION_RATE = float(VOLUME / DOUBLING_TIME) # mL / hour
     VOLUME_PER_DILUTION = float(DILUTION_RATE/ STEPS_PER_HOUR)
     TIME_BETWEEN_DILUTIONS = float(60/STEPS_PER_HOUR) #minutes
@@ -76,7 +80,7 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
     # PID Parameters
     # Kp, Ki, Kd may need to be changed for different selections
     Kp =  [0.7] * len(vials)
-    Ki =  [0.05] * len(vials)
+    Ki =  [0.1] * len(vials)
     Kd =  [0.2] * len(vials)
     pid_offset = [0.0] * len(vials)
 
@@ -87,7 +91,7 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
     mstat_vials = GLOBAL_VIALS #vials is all 16, can set to different range (ex. [0,1,2,3]) to only trigger tstat on those vials
 
 
-    if elapsed_time > 0: # initial time for growth, hours
+    if elapsed_time > 6: # initial time for growth, hours
 
         #Load pump log (all recorded in vial 0 log across all 16, since pump time occurs simultaneously for all)
         file_path =  "%s/%s/pump_log/vial00_pump_log.txt" % (save_path,EXP_NAME)
@@ -97,6 +101,11 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
         confirmed_pump_path =  "%s/%s/pump_log/confirmed_pump_log.txt" % (save_path,EXP_NAME)
         data = np.genfromtxt(confirmed_pump_path, delimiter=',')
         last_confirmed_pump = data[len(data)-1][0]
+
+        od_path = "%s/%s/OD/vial%d_OD.txt" % (save_path,EXP_NAME,int(GLOBAL_VIALS[0]))
+        od_data = np.genfromtxt(od_path, delimiter=',')
+        last_data_time = od_data[len(od_data)-1][0]
+
 
         # checks if dilution actually occured by ensuring OD measurements went down
         # If not, will resend dilution message
@@ -108,36 +117,41 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
             MESSAGE = message_file.read().strip().split(',')
             message_file.close()
 
+            # get vials that were diluted
+            diluted_vials_path = "%s/%s/diluted_vials.txt" % (save_path,EXP_NAME)
+            diluted_vials_file = open(diluted_vials_path,'r')
+            diluted_vials = diluted_vials_file.read().strip().split(',')
+            diluted_vials = list(filter(None,diluted_vials))
+            diluted_vials_file.close()
+
+            # obtains the first vial that underwent dilution
+            if diluted_vials != []:
+                od_path = "%s/%s/OD/vial%d_OD.txt" % (save_path,EXP_NAME,int(diluted_vials[0]))
+                od_data = np.genfromtxt(od_path, delimiter=',')
+            else:
+                od_path = "%s/%s/OD/vial%d_OD.txt" % (save_path,EXP_NAME,int(GLOBAL_VIALS[0]))
+                od_data = np.genfromtxt(od_path, delimiter=',')
+
+            # finds the index of the last dilution
+            time_data = od_data[:,0]
+            idx = np.searchsorted(time_data,last_pump,side="left")
+
+            # determine OD before the last dilutions
+            od_before = np.mean(od_data[(idx-4):idx,1])
+            # determine OD after the last dilution
+            od_after = np.mean(od_data[(idx+2):(idx+5),1])
+
             if MESSAGE == ['--'] * 48:
                 #write current time as last confirmed pump
                 confirmed_pump_file = open(confirmed_pump_path,'a+')
                 confirmed_pump_file.write("%f,%f,%f\n"%(elapsed_time,od_before, od_after))
                 confirmed_pump_file.close()
             else:
-                # get vials that were diluted
-                diluted_vials_path = "%s/%s/diluted_vials.txt" % (save_path,EXP_NAME)
-                diluted_vials_file = open(diluted_vials_path,'r')
-                diluted_vials = diluted_vials_file.read().strip().split(',')
-                diluted_vials = list(filter(None,diluted_vials))
-                diluted_vials_file.close()
 
-                # obtains the first vial that underwent dilution
-                od_path = "%s/%s/OD/vial%d_OD.txt" % (save_path,EXP_NAME,int(diluted_vials[0]))
-                od_data = np.genfromtxt(od_path, delimiter=',')
-
-
-                # finds the index of the last dilution
-                time_data = od_data[:,0]
-                idx = np.searchsorted(time_data,last_pump,side="left")
-
-                # determine OD before the last dilutions
-                od_before = np.mean(od_data[(idx-4):idx,1])
-                # determine OD after the last dilution
-                od_after = np.mean(od_data[(idx+2):(idx+5),1])
                 print("OD before: %f" %od_before)
                 print("OD after: %f" %od_after)
                 # checks that OD went down after dilution
-                if od_after / od_before < 0.98:
+                if od_after / od_before < 0.995:
                     # dilution occurred
                     print("Dilution confirmed!")
                     # write current time as last confirmed pump
@@ -157,7 +171,7 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                     pump_file.close()
 
         # if enough time passed for the next dilution to occur
-        if ((elapsed_time - last_pump)*3600) > (TIME_BETWEEN_DILUTIONS * 60): # convert to seconds and compare
+        if ((elapsed_time - last_pump)*3600) > (TIME_BETWEEN_DILUTIONS * 60) and (last_data_time - last_pump)*3600 > 300: # convert to seconds and compare
             # determine which pumps to fire (e.g. drug or no drug) based on current OD
             #cleanCommand = 0;
 
@@ -247,8 +261,9 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                     text_file.write(str(od_window))
                     """
                     # Fits the OD and time to a exponential curve, func
-                    #print(time_window)
-                    #print(od_window)
+                    # robust fitting supposedly less sensitive to outliers.
+                    # Per testing, has not given any different results than the regular fits
+                    # This is either due to it not working, or there are no outliers in data
                     param, converg = curve_fit(exp_func,time_window,od_window,bounds=([od_after_dilution - 0.05, -0.5],[od_after_dilution + 0.05, 0.5]))
                     param_robust = least_squares(exp_func_robust, [1, 0.1], loss='soft_l1', f_scale=0.1, args=(time_window,od_window))
 
@@ -303,54 +318,69 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
 
                 elif avg_od > DILUTION_OD:
                 """
-                if avg_od > DILUTION_OD:
-                    # PID Calculations
-                    p_err = 0
-                    i_err = 0
-                    d_err = 0
 
-                    # pid_control is the % of dilution to be conducted with drug media
-                    # will be calculated from errors and constants
+                # PID Calculations
+                p_err = 0
+                i_err = 0
+                d_err = 0
+
+                # pid_control is the % of dilution to be conducted with drug media
+                # will be calculated from errors and constants
+                pid_control = 0
+
+                # Calculates proportional error, e(t)
+                p_err = growth_rate - TARGET_GR
+
+                # Calculates Integrate[e(t), dt, t0, t] with trapezoid rule
+                # The integral is calculated every time the proportional
+                # error switches signs (so that every time that e[t] = 0, the integral term resets)
+                if p_err == 0 or last_p_error / p_err < 0:
+                    i_err = (growth_rate + last_gr  - 2*TARGET_GR) / STEPS_PER_HOUR
+                else:
+                    i_err = last_i_error + (growth_rate + last_gr  - 2*TARGET_GR) / STEPS_PER_HOUR
+
+                # Calculates d e(t)/dt
+                d_err = (growth_rate - last_gr) * STEPS_PER_HOUR
+                # Calculates d e(t)/dt, but with a smoothed fit
+                # Smoothing using Savitzky-Golay filter, using 5 points
+                # Also smoothes the growth rate
+                # However, this means that the smoothed function is two time points behind
+                # Can/should this still be used in the PID? #ZZ#
+                if len(gr_data) > 4:
+                    new_d_err = STEPS_PER_HOUR / 12 * (gr_data[len(gr_data)-5][1] - 8 * gr_data[len(gr_data)-4][1]  + 8 * gr_data[len(gr_data)-2][1] - gr_data[len(gr_data)-1][1])
+
+                    gr_smooth = 1 / 35 * (12 * gr_data[len(gr_data)-4][1] + 17 * gr_data[len(gr_data)-3][1] + 12 * gr_data[len(gr_data)-2][1] - 3 * gr_data[len(gr_data)-1][1] - 3 * gr_data[len(gr_data)-5][1])
+                else:
+                    new_d_err = 0
+                    gr_smooth = 0
+
+
+                # If the machine has been acting normally, if the growth rate dips below the target growth rate,
+                # a new offset is calculated and used for future rounds of control
+                if elapsed_time > 72 and p_err < 0 and last_p_error > 0:
+                    #print ("OFFSET LOG DIAGNOSTIC elapsed_time: %f" %(elapsed_time))
+                    #print ("OFFSET LOG DIAGNOSTIC p_err: %f" %(p_err))
+                    #print ("OFFSET LOG DIAGNOSTIC last_p_error: %f" %(last_p_error))
+                    #print ("OFFSET LOG DIAGNOSTIC len(drug_log_data): %f" %(len(drug_log_data)))
+                    new_pid_offset = 0
+                    for n in range(6,11):
+                        new_pid_offset = new_pid_offset + (drug_log_data[len(drug_log_data)-n][1])/5
+                    pid_offset[x] = new_pid_offset
+                    offset_file = open(offset_log_path, "a+")
+                    offset_file.write("%f, %f\n" % (elapsed_time, new_pid_offset))
+                    offset_file.close()
+
+                # Calculates the drug dilution percentage
+                pid_control = pid_offset[x] + p_err * Kp[x] + i_err * Ki[x] + d_err * Kd[x]
+
+                # Cleans up the controls in case they were calculated to be greater than 1 or less than 0
+                if pid_control > 1:
+                    pid_control = 1
+                elif pid_control < 0:
                     pid_control = 0
 
-                    # Calculates proportional error, e(t)
-                    p_err = growth_rate - TARGET_GR
-
-                    # Calculates Integrate[e(t), dt, t0, t] with trapezoid rule
-                    # The integral is calculated every time the proportional
-                    # error switches signs (so that every time that e[t] = 0, the integral term resets)
-                    if p_err == 0 or last_p_error / p_err < 0:
-                        i_err = (growth_rate + last_gr  - 2*TARGET_GR) / STEPS_PER_HOUR
-                    else:
-                        i_err = last_i_error + (growth_rate + last_gr  - 2*TARGET_GR) / STEPS_PER_HOUR
-
-                    # Calculates d e(t)/dt
-                    d_err = (growth_rate - last_gr) * STEPS_PER_HOUR
-
-                    # If the machine has been acting normally, if the growth rate dips below the target growth rate,
-                    # a new offset is calculated and used for future rounds of control
-                    if elapsed_time > 72 and p_err < 0 and last_p_error > 0:
-                        #print ("OFFSET LOG DIAGNOSTIC elapsed_time: %f" %(elapsed_time))
-                        #print ("OFFSET LOG DIAGNOSTIC p_err: %f" %(p_err))
-                        #print ("OFFSET LOG DIAGNOSTIC last_p_error: %f" %(last_p_error))
-                        #print ("OFFSET LOG DIAGNOSTIC len(drug_log_data): %f" %(len(drug_log_data)))
-                        new_pid_offset = 0
-                        for n in range(6,11):
-                            new_pid_offset = new_pid_offset + (drug_log_data[len(drug_log_data)-n][1])/5
-                        pid_offset[x] = new_pid_offset
-                        offset_file = open(offset_log_path, "a+")
-                        offset_file.write("%f, %f\n" % (elapsed_time, new_pid_offset))
-                        offset_file.close()
-
-                    # Calculates the drug dilution percentage
-                    pid_control = pid_offset[x] + p_err * Kp[x] + i_err * Ki[x] + d_err * Kd[x]
-
-                    # Cleans up the controls in case they were calculated to be greater than 1 or less than 0
-                    if pid_control > 1:
-                        pid_control = 1
-                    elif pid_control < 0:
-                        pid_control = 0
-
+                # Dilute only if the OD is greater than dilution threshold
+                if avg_od > DILUTION_OD:
                     # Option to dilute twice if the OD is > MAX_OD. This is to keep the culture within the linear range of the detectors
                     num_dils = 1
                     if avg_od > SUPER_OD:
@@ -379,19 +409,10 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                     pid_file.write("%f,%f,%f,%f,%f,%f,%f,%f,%f\n" % (elapsed_time, p_err, i_err, d_err, Kp[x] * p_err, Ki[x] * i_err, Kd[x] * d_err,pid_offset[x], pid_control))
                     pid_file.close()
 
-                elif avg_od < DILUTION_OD:
-                    p_err = 0
-                    i_err = 0
-                    d_err = 0
-                    pid_offset[x] = 0
-                    pid_control = 0
-                    new_d_err = 0
-                    gr_smooth = 0
-
                 # 1. Update GR file with current GR
-                GRFile = open(gr_path,"a+")
-                GRFile.write("%f,%s\n" %  (elapsed_time, growth_rate))
-                GRFile.close()
+                gr_file = open(gr_path,"a+")
+                gr_file.write("%f,%s\n" %  (elapsed_time, growth_rate))
+                gr_file.close()
 
                 # 2. Updates drug concentration file only if a dilution event happened
                 if avg_od > DILUTION_OD:
@@ -413,16 +434,28 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                 log_file.write ("pid_control: %f\n" %(pid_control))
                 log_file.close()
 
+                d_err_log_path = "%s/%s/logs/vial%d_d_err.txt" % (save_path,EXP_NAME,x)
+                d_err_log_file = open(d_err_log_path,"a+")
+                d_err_log_file.write("%f,%f,%f\n"%(elapsed_time,d_err,new_d_err))
+                d_err_log_file.close()
+
+                gr_sm_log_path = "%s/%s/growth_rate/vial%d_smooth.txt" % (save_path,EXP_NAME,x)
+                gr_sm_log_file = open(gr_sm_log_path,"a+")
+                print(gr_smooth)
+                gr_sm_log_file.write("%f,%f,%f\n"%(elapsed_time,growth_rate,gr_smooth))
+                gr_sm_log_file.close()
 
                 # Terminal display values for each vial:
                 print ("Vial %d" %(x))
                 print ("Average OD: %f" %(avg_od))
                 print ("Target Growth Rate: %f" %(TARGET_GR))
                 print ("Growth Rate: %f" %(growth_rate))
+                print ("Smoothed GR: %f" %(gr_smooth))
                 print ("last p error: %f" %(last_p_error))
                 print ("p_err: %f" %(p_err))
                 print ("i error: %f" %(i_err))
                 print ("d_err: %f" %(d_err))
+                print ("smoothed d_err: %f"%(new_d_err))
                 print ("PID Offset: %f" %(pid_offset[x]))
                 print ("pid_control: %f" %(pid_control))
 
@@ -470,7 +503,7 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                 eVOLVER.fluid_command(MESSAGE)
 
 
-                # Updates pump file
+            # Updates pump file
             pump_path =  "%s/%s/pump_log/vial00_pump_log.txt" % (save_path,EXP_NAME)
             pump_file = open(pump_path,"a+")
             pump_file.write("%f,%f\n" %  (elapsed_time,elapsed_time))
