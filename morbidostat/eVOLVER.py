@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
 """
+2021-11-02 change log
+- added automatic rejection of new calibrations if the elapsed time is greater than 1 hr
+- changed the terminal to show the name of the experiment, instead of the generic eVOLVER experiment
+
 2021-10-24 change log
 - added confirmed_pump_log.txt file upon new experiment
 
@@ -47,6 +51,7 @@ LINEAR = 'linear'
 THREE_DIMENSION = '3d'
 LINEAR_OD = 'linear_od'
 EXPN = 'exp'
+elapsed_time = 0
 
 logger = logging.getLogger('eVOLVER')
 
@@ -154,7 +159,11 @@ class EvolverNamespace(BaseNamespace):
 
     def on_activecalibrations(self, data):
         print('Calibrations recieved')
-        inpt = input('Do you want to obtain calibrations from eVOLVER? (y/n)')
+        if elapsed_time < 1:
+            inpt = input('Do you want to obtain calibrations from eVOLVER? (y/n)')
+        else:
+            inpt = 'n'
+            print("Calibration have NOT been stored since an experiment is in process!\nYou can manually update the calibration json files if desired.")
         if inpt == 'y':
             for calibration in data:
                 if calibration['calibrationType'] == 'od':
@@ -765,7 +774,8 @@ if __name__ == '__main__':
     options = get_options()
 
     #changes terminal tab title in OSX
-    print('\x1B]0;eVOLVER EXPERIMENT: PRESS Ctrl-C TO PAUSE\x07')
+    term_title = ('\x1B]0;%s\x07'%(EXP_NAME))
+    print(term_title)
 
     # silence logging until experiment is initialized
     logging.level = logging.CRITICAL + 10
