@@ -5,6 +5,10 @@ Might be acceptable with lower timeout, but 0.3 is not enough.
 
 
 eVOLVER.py change log
+2021-11-02
+- added automatic rejection of new calibrations if the elapsed time is greater than 1 hr
+- changed the terminal to show the name of the experiment, instead of the generic eVOLVER experiment
+
 2021-10-24
 - added confirmed_pump_log.txt file upon new experiment
 
