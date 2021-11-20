@@ -3,6 +3,7 @@ import numpy as np
 import os.path
 import math
 from scipy.optimize import curve_fit
+import yaml
 
 ###### Description of Code ##########
 # This code is designed for eVOLVER to dynamically tune selection by altering the stringency of selection (AKA drug concentration)
@@ -50,12 +51,16 @@ from scipy.optimize import curve_fit
 # 30        10      OUT
 # 31        11      OUT
 """
-GLOBAL_VIALS = range(8,12)
+
+with open('config.yml') as f:
+    config = yaml.load(f, yaml.FullLoader)
+
+GLOBAL_VIALS = config['VIALS']
 
 # def morbidostat (ODData, tempData, vials, elapsed_time, exp_name):
 def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
     # Set Stir rates
-    MESSAGE = "10,10,10,10   ,10,10,10,10,  10,10,10,10,  10,10,10,10,"
+    MESSAGE = config['morbidostat']['MESSAGE']
     eVOLVER_module.stir_rate(MESSAGE)
 
     control = np.power(2,range(0,32))
@@ -63,12 +68,13 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
     flow_rate = 1.0 #ml/sec
 
     # Global paramemters for PID
-    VOLUME =  30.0                              # Volume assumed for dilution events (mL)
-    DILUTION_OD = 0.80                          # OD at which dilutions start occurring
-    MAX_OD = 1.4                               # High OD safeguard to prevent culture from leaving linear range
-    DOUBLING_TIME = 8.0                         # User defined target doubling time
+    VOLUME =  config['morbidostat']['VOLUME']                             # Volume assumed for dilution events (mL)
+    INITIAL_WAIT = config['morbidostat']['INITIAL WAIT']                            # hrs, time for which will allow the cultures to grow without any pump intervention
+    DILUTION_OD = config['morbidostat']['DILUTION_OD']                          # OD at which dilutions start occurring
+    MAX_OD = config['morbidostat']['MAX_OD']                               # High OD safeguard to prevent culture from leaving linear range
+    DOUBLING_TIME = config['morbidostat']['DOUBLING_TIME']                         # User defined target doubling time
     TARGET_GR = math.log(2.0)/DOUBLING_TIME     # Calculated based off the user defined doubling time
-    STEPS_PER_HOUR = 1                          # User defined number of dilution events per hour. Volumes are adjusted accordingly
+    STEPS_PER_HOUR = config['morbidostat']['STEPS_PER_HOUR']                          # User defined number of dilution events per hour. Volumes are adjusted accordingly
     DILUTION_RATE = float(VOLUME / DOUBLING_TIME) # mL / hour
     VOLUME_PER_DILUTION = float(DILUTION_RATE/ STEPS_PER_HOUR)
     TIME_BETWEEN_DILUTIONS = float(60/STEPS_PER_HOUR) #minutes
@@ -79,13 +85,13 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
     #Ki =         [0.05, 0.05,        0.05, 0.05,     0.05, 0.05,      0.05, 0.05]
     #Kd =         [0.2, 0.2,        0.2, 0.2,         0.2, 0.2,          0.2, 0.2]
     #pid_offset = [0.0, 0.0,    0.0, 0.0,     0.0, 0.0,      0.0, 0.0]
-    Kp = [0.7] * 16
-    Ki = [0.05] * 16
-    Kd = [0.2] * 16
-    pid_offset = [0.0] * 16
+    Kp = config['morbidostat']['Kp']
+    Ki = config['morbidostat']['Ki']
+    Kd = config['morbidostat']['Kd']
+    pid_offset = config['morbidostat']['pid_offset']
 
 
-    if elapsed_time > 0.5: # initial time for growth, hours
+    if elapsed_time > INITIAL_WAIT: # initial time for growth, hours
 
         #Load pump log (all recorded in vial 0 log across all 16, since pump time occurs simultaneously for all)
         save_path = os.path.dirname(os.path.realpath(__file__))
@@ -476,16 +482,18 @@ def turbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
 
     # Global paramemters for turbidostat
     VOLUME =  30.0                              # Volume assumed for dilution events (mL)
+    INITIAL_WAIT = 1                            # hrs, time for which no pumps will be running
     DILUTION_OD = 0.80                          # OD at which dilutions start occurring
     MAX_OD = 1.4                               # High OD safeguard to prevent culture from leaving linear range
     VOLUME_PER_DILUTION = 6                     # mLs per dilution event
     TIME_BETWEEN_DILUTIONS = 5                  # minimum time between dilution events, mins
 
-    if elapsed_time > 0.5: # initial time for growth, hours
+    if elapsed_time > INITIAL_WAIT: # initial time for growth, hours
     
         for x in GLOBAL_VIALS:
             #Load pump log
-            save_path = os.path.dirname(os.path.realpath(__file__))
+            script_path = os.path.dirname(os.path.realpath(__file__))
+            save_path = os.getcwd()
             file_path =  "%s/%s/pump_log/vial%d_pump_log.txt" % (save_path,exp_name,x)
             data = np.genfromtxt(file_path, delimiter=',')
             last_pump = data[len(data)-1][0]
@@ -578,14 +586,12 @@ def turbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                 print ("CLEAN_MESSAGE: %s" %(CLEAN_MESSAGE))
                 eVOLVER_module.fluid_command(CLEAN_MESSAGE, 0, elapsed_time, TIME_BETWEEN_DILUTIONS *60, exp_name, 8,'y')
 
-                # Updates pump file
-                # #ZZ# I THINK THIS IS UNNECESSARY 11-15-21
-                """
+                # Updates pump file             
                 pump_path =  "%s/%s/pump_log/vial%d_pump_log.txt" % (save_path,exp_name,x)
                 pump_file = open(pump_path,"a+")
-                pump_file.write("%f,%f\n" %  (elapsed_time,elapsed_time))
+                pump_file.write("%f,%f\n" %  (elapsed_time,num_dils*VOLUME_PER_DILUTION))
                 pump_file.close()
-                """
+                
 
 def exp_func(x, a, b):
     # Exponential function for fit
