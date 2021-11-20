@@ -1,8 +1,9 @@
 README
-Scripts to enable morbidostat on eVOLVER2.0 from FynchBio
+Scripts to enable morbidostat on eVOLVER2.0 from FynchBio. The python files do not have to be in current working directory, but config.yml and calibration files (OD_cal.json, temp_cal.json) should be in cwd. Will create a folder with EXP_NAME in cwd as defined by config.yml.
 To enable morbidostat mode and to ensure that dilution commands are run because of the complexity in custom_script.py, 
 the timeout value in the conf.yml file (pi@<ip address>:~/evolver/evolver/conf.yml) needs to be increased to 0.8. 
 Might be acceptable with lower timeout, but 0.3 is not enough.
+
 
 
 eVOLVER.py change log
