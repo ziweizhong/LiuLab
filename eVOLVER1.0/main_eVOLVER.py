@@ -7,13 +7,17 @@ import os.path
 import custom_script
 import smtplib
 import numpy as np
+import yaml
 
+with open('config.yml') as f:
+    config = yaml.load(f, yaml.FullLoader)
+    
 # eVOLVER mode
 # current options are: 'turbidostat' or 'morbidostat'
-FUNCTION = 'morbidostat'
+FUNCTION = config['FUNCTION']
 
 # name your experiment here
-EXP_NAME = 'your_expt_name'
+EXP_NAME = config['EXP_NAME']
 
 #Where the GUI is called and widgets are placed
 class make_GUI:
@@ -24,7 +28,8 @@ class make_GUI:
         home = Frame(note)
         note.add(home, text = "Home")
 
-        save_path = os.path.dirname(os.path.realpath(__file__))
+        script_path = os.path.dirname(os.path.realpath(__file__))
+        save_path = os.getcwd()
         tabArray = [ ]
 
         for x in vials:
