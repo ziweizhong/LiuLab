@@ -10,8 +10,17 @@ import scipy.signal
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff()
+import yaml
+import hashlib
 
-EVOLVER_IP = "10.0.0.2"
+with open('config.yml') as f:
+    config = yaml.load(f, yaml.FullLoader)
+
+EVOLVER_IP = config['EVOLVER_IP']
+
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+SAVE_PATH = os.getcwd()
+EXP_DIR = os.path.join(SAVE_PATH, config['EXP_NAME'])
 
 def read_OD(vials):
     od_cal = np.genfromtxt("OD_cal.txt", delimiter=',')
@@ -41,10 +50,10 @@ def read_OD(vials):
 
 def update_temp(vials,exp_name):
     temp_cal = np.genfromtxt("temp_calibration.txt", delimiter=',')
-    save_path = os.path.dirname(os.path.realpath(__file__))
+    
     MESSAGE = ""
     for x in vials:
-        file_path =  "%s/%s/temp_config/vial%d_tempconfig.txt" % (save_path,exp_name,x)
+        file_path =  "%s/%s/temp_config/vial%d_tempconfig.txt" % (SAVE_PATH,exp_name,x)
         data = np.genfromtxt(file_path, delimiter=',')
         temp_set = data[len(data)-1][1]
         temp_set = int((temp_set - temp_cal[1][x])/temp_cal[0][x])
@@ -77,8 +86,8 @@ def fluid_command(MESSAGE, vial, elapsed_time, pump_wait, exp_name, time_on, fil
     sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
     sock.settimeout(5)
-    save_path = os.path.dirname(os.path.realpath(__file__))
-    file_path =  "%s/%s/pump_log/vial%d_pump_log.txt" % (save_path,exp_name,vial)
+
+    file_path =  "%s/%s/pump_log/vial%d_pump_log.txt" % (SAVE_PATH,exp_name,vial)
     data = np.genfromtxt(file_path, delimiter=',')
     last_pump = data[len(data)-1][0]
     if ((elapsed_time- last_pump)*3600) >pump_wait:
@@ -96,22 +105,18 @@ def stir_rate (MESSAGE):
     sock.settimeout(5)
     sock.sendto(MESSAGE, (UDP_IP, UDP_PORT))
 
-
-
 def parse_data(data, elapsed_time, vials, exp_name, file_name):
-    save_path = os.path.dirname(os.path.realpath(__file__))
     if data == 'empty':
         print "%s Data Empty! Skipping data log..." % file_name
     else:
         for x in vials:
-            file_path =  "%s/%s/%s/vial%d_%s.txt" % (save_path,exp_name,file_name,x,file_name)
+            file_path =  "%s/%s/%s/vial%d_%s.txt" % (SAVE_PATH,exp_name,file_name,x,file_name)
             text_file = open(file_path,"a+")
             text_file.write("%f,%s\n" %  (elapsed_time, data[x]))
             text_file.close()
 
 def initialize_exp(exp_name, vials):
-    save_path = os.path.dirname(os.path.realpath(__file__))
-    dir_path =  "%s/%s" % (save_path,exp_name)
+    dir_path =  "%s/%s" % (SAVE_PATH,exp_name)
     exp_continue = raw_input('Continue from exisiting experiment? (y/n): ')
     if exp_continue == 'n':
         OD_read = read_OD(vials)
@@ -203,36 +208,69 @@ def initialize_exp(exp_name, vials):
         text_file.close()
 
     else:
-        pickle_path =  "%s/%s/%s.pickle" % (save_path,exp_name,exp_name)
+        # Loads variables from previous state of experiment
+        pickle_path =  "%s/%s/%s.pickle" % (SAVE_PATH,exp_name,exp_name)
         with open(pickle_path) as f:
             loaded_var  = pickle.load(f)
         x = loaded_var
         start_time = x[0]
         OD_initial = x[1]
+
+        # Checks for any changes in custom_script or in config.yml and updates as necessary
+        try:
+            latest_script_filename = os.path.join(EXP_DIR,'custom_script_latest.txt')
+            script_name = os.path.join(SCRIPT_DIR,'custom_script.py')
+            latest_hash = hashlib.md5(open(latest_script_filename, 'rb').read()).hexdigest()
+            script_hash = hashlib.md5(open(script_name, 'rb').read()).hexdigest()
+        except:
+            print('Error hashing custom_script.py!')
+            latest_hash = 0
+            script_hash = 1
+
+        if latest_hash != script_hash:
+            # copy current custom script and config.yml to txt file
+            backup_filename = 'custom_script_{0}.txt'.format(time.strftime('%y%m%d_%H%M'))
+            shutil.copy(script_name, os.path.join(EXP_DIR,backup_filename))
+            shutil.copy(script_name, os.path.join(EXP_DIR,'custom_script_latest.txt'))
+
+        # Gets the latest config.yml backup and checks if it is the same as the current config file
+        try:
+            latest_yml_name = os.path.join(EXP_DIR,'config_yml_latest.txt')
+            yml_name = os.path.join(SAVE_PATH,'config.yml')
+            latest_yml_hash = hashlib.md5(open(latest_yml_name, 'rb').read()).hexdigest()
+            yml_hash = hashlib.md5(open(yml_name, 'rb').read()).hexdigest()
+        except:
+            print('Error hashing config.yml!')
+            latest_yml_hash = 0
+            yml_hash = 1
+
+        if latest_yml_hash != yml_hash:
+            # copy current config.yml to txt file
+            yml_filename = 'config_yml_{0}.txt'.format(time.strftime('%y%m%d_%H%M'))
+            shutil.copy(yml_name, os.path.join(EXP_DIR,yml_filename))
+            shutil.copy(yml_name, os.path.join(EXP_DIR,'config_yml_latest.txt'))
+
     return start_time, OD_initial
 
 def save_var(exp_name, start_time, OD_initial):
-    save_path = os.path.dirname(os.path.realpath(__file__))
-    pickle_path =  "%s/%s/%s.pickle" % (save_path,exp_name,exp_name)
+    pickle_path =  "%s/%s/%s.pickle" % (SAVE_PATH,exp_name,exp_name)
     with open(pickle_path, 'w') as f:
         pickle.dump([start_time, OD_initial], f)
 
 def graph_data(vials, exp_name, file_name):
-    save_path = os.path.dirname(os.path.realpath(__file__))
     for x in vials:
-        file_path =  "%s/%s/%s/vial%d_%s.txt" % (save_path,exp_name,file_name,x,file_name)
+        file_path =  "%s/%s/%s/vial%d_%s.txt" % (SAVE_PATH,exp_name,file_name,x,file_name)
         data = np.genfromtxt(file_path, delimiter=',')
         plt.plot(data[:,0], data[:,1])
  ##      plt.ylim((-.05,.5))
-        plot_path =  "%s/%s/%s_graph/vial%d_%s.png" % (save_path,exp_name,file_name,x,file_name)
+        plot_path =  "%s/%s/%s_graph/vial%d_%s.png" % (SAVE_PATH,exp_name,file_name,x,file_name)
         plt.savefig(plot_path)
         plt.clf()
 
 def calc_growth_rate(vials, exp_name,elapsed_time, OD_maintain):
-    save_path = os.path.dirname(os.path.realpath(__file__))
     for x in vials:
         ## Grab Data and make setpoint
-        file_path =  "%s/%s/OD/vial%d_OD.txt" % (save_path,exp_name,x)
+        file_path =  "%s/%s/OD/vial%d_OD.txt" % (SAVE_PATH,exp_name,x)
         OD_data = np.genfromtxt(file_path, delimiter=',')
         if np.shape(OD_data)[0] > 1010:
             time = OD_data[-1000:-1,0]
@@ -247,7 +285,7 @@ def calc_growth_rate(vials, exp_name,elapsed_time, OD_maintain):
             ## Calculate Average Growth for data
             average_data =((slope_data2[(median_filter_range/2):(np.size(slope_data2)-1-median_filter_range/2)])*3600)/OD_maintain
             ## Write Growth Rate to text
-            log_path = "%s/%s/growth_rate/vial%d_growth_rate.txt" % (save_path,exp_name,x)
+            log_path = "%s/%s/growth_rate/vial%d_growth_rate.txt" % (SAVE_PATH,exp_name,x)
             text_file = open(log_path,"a+")
             text_file.write("%d,%s\n" %  (elapsed_time, np.average(average_data)))
             text_file.close()
