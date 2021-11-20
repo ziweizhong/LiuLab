@@ -1,1 +1,13 @@
-This folder contains the code for running the eVOLVER 1.0 with Python, and is only compatible with Python 2.7
+Code for running the eVOLVER 1.0 with Python, and is only compatible with Python 2.7
+
+To run eVOLVER scripts, python files can be saved anywhere and does not have to be in current working directory. However, current directory should be where config.yml, od_cal.txt, and temperature_cal.txt should be located. 
+Experiments will be saved with the given name in the config.yml file in the current working directory.
+Enables running multiple experiments on the same machine with one version of the master code
+
+Change Log
+2021-11-19
+Changed code to accept a config.yml file for all user definable values
+Updated eVOLVER_module to create snapshots of config.yml and custom_script.py at beginning of experiment and if changed during the experiment
+
+2021-11-14
+Enabled turbidostat mode
