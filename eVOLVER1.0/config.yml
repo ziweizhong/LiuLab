@@ -1,0 +1,51 @@
+# Sample configuration file
+
+{
+  # eVOLVER mode
+  # current options are: 'turbidostat' or 'morbidostat'
+  'FUNCTION' : 'turbidostat',
+
+  # name your experiment here
+  'EXP_NAME' : 'Ribosome_1',
+
+  'EVOLVER_IP' : "10.0.0.2",
+
+  'VIALS' : [8,9,10,11],
+
+  'morbidostat' : {
+    # Set Stir rates
+    'MESSAGE' : "10,10,10,10   ,10,10,10,10,  10,10,10,10,  10,10,10,10,",
+
+    # Calibrated flow rates
+    'flow_rate' : 1.0, #ml/sec
+
+    # Global paramemters for PID
+    'VOLUME' :  30.0,                              # Volume assumed for dilution events (mL)
+    'INITIAL_WAIT' : 1,                            # hrs, time for which no pumps will be running
+    'DILUTION_OD' : 0.80,                          # OD at which dilutions start occurring
+    'MAX_OD' : 1.4,                                # High OD safeguard to prevent culture from leaving linear range
+    'DOUBLING_TIME' : 8.0,                         # User defined target doubling time
+    'STEPS_PER_HOUR' : 1.0,                        # User defined number of dilution events per hour. Volumes are adjusted accordingly
+
+    'Kp' :         [0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7,  0.7  ],
+    'Ki' :         [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05 ],
+    'Kd' :         [0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2  ],
+    'pid_offset' : [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0  ],
+  },
+
+  'turbidostat' : {
+    # Set Stir rates
+    'MESSAGE' : "10,10,10,10   ,10,10,10,10,  10,10,10,10,  10,10,10,10,",
+
+    # Calibrated flow rates
+    'flow_rate' : 1.0, #ml/sec
+
+    # Global paramemters for turbidostat
+    'VOLUME' :  30.0,                              # Volume assumed for dilution events (mL)
+    'INITIAL_WAIT' : 1,                            # hrs, time for which no pumps will be running
+    'DILUTION_OD' : 0.80,                          # OD at which dilutions start occurring
+    'MAX_OD' : 1.4,                                # High OD safeguard to prevent culture from leaving linear range
+    'VOLUME_PER_DILUTION' : 6,                     # mLs per dilution event
+    'TIME_BETWEEN_DILUTIONS' : 5,                  # minimum time between dilution events, mins
+  },
+}
