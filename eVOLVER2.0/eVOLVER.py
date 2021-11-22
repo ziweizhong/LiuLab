@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 """
+2021-11-22 change log
+- added additional flags to script calling, including -r to restart the experiment without confirmation and -n to create a new experiment
 2021-11-19 change log
 - moved all user-defined variables to config.yml
 - added snapshots of config.yml and custom_script.py, but only updates when changes are detected via md5 checksum
-
 2021-10-24 change log
 - added confirmed_pump_log.txt file upon new experiment
-
 2021-10-23 change log
 - added the ability to change power levels
 - edited so that the only vials to save data from are the active vials in the experiment
@@ -444,8 +444,13 @@ class EvolverNamespace(BaseNamespace):
             if always_yes:
                 exp_continue = 'y'
             else:
-                while exp_continue not in ['y', 'n']:
-                    exp_continue = input('Continue from existing experiment? (y/n): ')
+                if options.restart_expt == True:
+                    exp_continue = 'y'
+                elif options.new_expt == True:
+                    exp_continue= 'n'
+                else:
+                    while exp_continue not in ['y', 'n']:
+                        exp_continue = input('Continue from existing experiment? (y/n): ')
         else:
             exp_continue = 'n'
 
@@ -788,6 +793,12 @@ class EvolverNamespace(BaseNamespace):
 def get_options():
     description = 'Run an eVOLVER experiment from the command line'
     parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('-r', action = 'store_true', dest = 'restart_expt', default=False, help = "If entered, will restart the experiment if there is a file directory present")
+
+    parser.add_argument('-n', action = 'store_true', dest = 'new_expt', default=False, help = "If enabled, start a new experiment. Use caution with this flag.")
+
+    parser.add_argument('-C', action = 'store_true', dest = 'conf_new_expt', default=False, help = "If enabled, will not ask to confirm the overwrite of the new directory. Use extreme caution with this flag.")
 
     parser.add_argument('--always-yes', action='store_true',
                         default=False,
