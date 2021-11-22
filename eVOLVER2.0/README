@@ -7,6 +7,9 @@ Might be acceptable with lower timeout, but 0.3 is not enough.
 
 
 eVOLVER.py change log
+2021-11-22
+- added additional flags to script calling, including -r to restart the experiment without confirmation and -n to create a new experiment
+
 2021-11-19
 - moved all user-defined variables to config.yml
 - added snapshots of config.yml and custom_script.py, but only updates when changes are detected via md5 checksum
