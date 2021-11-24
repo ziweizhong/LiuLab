@@ -1,12 +1,7 @@
-# Sample configuration file
-
 {
   # eVOLVER mode
   # current options are: 'turbidostat' or 'morbidostat'
   'FUNCTION' : 'turbidostat',
-
-  # name your experiment here
-  'EXP_NAME' : 'Ribosome_1',
 
   'EVOLVER_IP' : "10.0.0.2",
 
@@ -47,5 +42,26 @@
     'MAX_OD' : 1.4,                                # High OD safeguard to prevent culture from leaving linear range
     'VOLUME_PER_DILUTION' : 6,                     # mLs per dilution event
     'TIME_BETWEEN_DILUTIONS' : 5,                  # minimum time between dilution events, mins
+
+    ### PUMP ASSIGNMENTS ###
+    ### Please note that the pumps need to be assigned to vials correctly, especially when switching
+    ###  between morbidostat and turbidostat mode. 
+
+    'pump_assignment' : 2
+    #  IF pump_assignment = 1:
+    ### Turbidostat mode in all vials
+    ###                               VIALS
+    ###        0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
+    ###        ______________________________________________________________
+    #media  = [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10, 11, 12, 13, 14, 15]
+    #efflux = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+    
+    #  IF pump_assignment = 2: 
+    ### Turbidostat mode in vials 8-11 with remaining pumps (usually when 0-7 are morbidostat)
+    ###                               VIALS
+    ###        0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
+    ###        ______________________________________________________________
+    #media  = [32, 32, 32, 32, 32, 32, 32, 32, 24, 25, 26, 27, 32, 32, 32, 32]
+    #efflux = [32, 32, 32, 32, 32, 32, 32, 32, 28, 29, 30, 31, 32, 32, 32, 32]
   },
 }
