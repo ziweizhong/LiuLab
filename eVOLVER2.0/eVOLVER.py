@@ -30,6 +30,7 @@ import traceback
 from scipy import stats
 from socketIO_client import SocketIO, BaseNamespace
 import hashlib
+import glob
 
 
 import custom_script
@@ -45,9 +46,11 @@ VIALS_TO_SAVE = custom_script.GLOBAL_VIALS
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 SAVE_PATH = os.getcwd()
-EXP_DIR = os.path.join(SAVE_PATH, EXP_NAME)
+#EXP_DIR = os.path.join(SAVE_PATH, EXP_NAME)
+EXP_DIR = SAVE_PATH
 OD_CAL_PATH = os.path.join(SAVE_PATH, 'od_cal.json')
 TEMP_CAL_PATH = os.path.join(SAVE_PATH, 'temp_cal.json')
+CONFIG_PATH = os.path.join(SAVE_PATH, 'config.yml')
 
 SIGMOID = 'sigmoid'
 LINEAR = 'linear'
@@ -461,14 +464,16 @@ class EvolverNamespace(BaseNamespace):
                     exp_overwrite = 'y'
                 else:
                     while exp_overwrite not in ['y', 'n']:
-                        exp_overwrite = input('Directory aleady exists. '
-                                            'Overwrite with new experiment? (y/n): ')
+                        exp_overwrite = input('This will overwrite any existing experimental data!! Do you want to continue? (y/n): ')
                 logger.info('data directory already exists')
                 if exp_overwrite == 'y':
                     logger.info('deleting existing data directory')
-                    shutil.rmtree(EXP_DIR)
+                    files = glob.glob(EXP_DIR+'/*')
+                    for f in files:
+                        if f != OD_CAL_PATH and f != TEMP_CAL_PATH and f != CONFIG_PATH:
+                            shutil.rmtree(f)
                 else:
-                    print('Change experiment name in custom_script.py '
+                    print('Please create a new experimental folder '
                         'and then restart...')
                     logger.warning('not deleting existing data directory, exiting')
                     sys.exit(1)
@@ -497,6 +502,12 @@ class EvolverNamespace(BaseNamespace):
             os.makedirs(os.path.join(EXP_DIR, 'offset_log'))
             # End directory creation for mstat
 
+            # creates an initial snapshot of custom_script.py and config.yml
+            script_name = os.path.join(SCRIPT_DIR,'custom_script.py')
+            shutil.copy(script_name, os.path.join(EXP_DIR,'custom_script_latest.txt'))
+            yml_name = os.path.join(SAVE_PATH,'config.yml')
+            shutil.copy(yml_name, os.path.join(EXP_DIR,'config_yml_latest.txt'))
+            
             for x in vials:
                 exp_str = "Experiment: {0} vial {1}, {2}".format(EXP_NAME,
                                                                  x,
