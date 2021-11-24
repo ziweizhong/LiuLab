@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 plt.ioff()
 import yaml
 import hashlib
+import glob
 
 with open('config.yml') as f:
     config = yaml.load(f, yaml.FullLoader)
@@ -20,7 +21,13 @@ EVOLVER_IP = config['EVOLVER_IP']
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 SAVE_PATH = os.getcwd()
-EXP_DIR = os.path.join(SAVE_PATH, config['EXP_NAME'])
+#EXP_DIR = os.path.join(SAVE_PATH, config['EXP_NAME'])
+EXP_DIR = SAVE_PATH
+
+OD_CAL_PATH = os.path.join(SAVE_PATH, 'OD_cal.txt')
+TEMP_CAL_PATH = os.path.join(SAVE_PATH, 'temp_calibration.txt')
+CONFIG_PATH = os.path.join(SAVE_PATH, 'config.yml')
+
 
 def read_OD(vials):
     od_cal = np.genfromtxt("OD_cal.txt", delimiter=',')
@@ -53,7 +60,7 @@ def update_temp(vials,exp_name):
     
     MESSAGE = ""
     for x in vials:
-        file_path =  "%s/%s/temp_config/vial%d_tempconfig.txt" % (SAVE_PATH,exp_name,x)
+        file_path =  "%s/temp_config/vial%d_tempconfig.txt" % (SAVE_PATH,x)
         data = np.genfromtxt(file_path, delimiter=',')
         temp_set = data[len(data)-1][1]
         temp_set = int((temp_set - temp_cal[1][x])/temp_cal[0][x])
@@ -87,7 +94,7 @@ def fluid_command(MESSAGE, vial, elapsed_time, pump_wait, exp_name, time_on, fil
                      socket.SOCK_DGRAM) # UDP
     sock.settimeout(5)
 
-    file_path =  "%s/%s/pump_log/vial%d_pump_log.txt" % (SAVE_PATH,exp_name,vial)
+    file_path =  "%s/pump_log/vial%d_pump_log.txt" % (SAVE_PATH,vial)
     data = np.genfromtxt(file_path, delimiter=',')
     last_pump = data[len(data)-1][0]
     if ((elapsed_time- last_pump)*3600) >pump_wait:
@@ -110,13 +117,13 @@ def parse_data(data, elapsed_time, vials, exp_name, file_name):
         print "%s Data Empty! Skipping data log..." % file_name
     else:
         for x in vials:
-            file_path =  "%s/%s/%s/vial%d_%s.txt" % (SAVE_PATH,exp_name,file_name,x,file_name)
+            file_path =  "%s/%s/vial%d_%s.txt" % (SAVE_PATH,file_name,x,file_name)
             text_file = open(file_path,"a+")
             text_file.write("%f,%s\n" %  (elapsed_time, data[x]))
             text_file.close()
 
 def initialize_exp(exp_name, vials):
-    dir_path =  "%s/%s" % (SAVE_PATH,exp_name)
+    dir_path =  "%s" % (SAVE_PATH)
     exp_continue = raw_input('Continue from exisiting experiment? (y/n): ')
     if exp_continue == 'n':
         OD_read = read_OD(vials)
@@ -129,7 +136,22 @@ def initialize_exp(exp_name, vials):
 
         start_time = time.time()
         if os.path.exists(dir_path):
-            shutil.rmtree(dir_path)
+            files = glob.glob(os.getcwd()+'/*')
+            for f in files:
+                if f != OD_CAL_PATH and f != TEMP_CAL_PATH and f != CONFIG_PATH:
+                    try:
+                        shutil.rmtree(f)
+                    except:
+                        try:
+                            os.remove(f)
+                        except:
+                            print("Error removing %s!"%(f))
+
+        script_name = os.path.join(SCRIPT_DIR,'custom_script.py')
+        yml_name = os.path.join(SAVE_PATH,'config.yml')
+        shutil.copy(yml_name, os.path.join(EXP_DIR,'config_yml_latest.txt'))
+        shutil.copy(script_name, os.path.join(EXP_DIR,'custom_script_latest.txt'))
+
         os.makedirs("%s/OD" % dir_path)
         os.makedirs("%s/temp" % dir_path)
         os.makedirs("%s/temp_graph" % dir_path)
@@ -209,7 +231,7 @@ def initialize_exp(exp_name, vials):
 
     else:
         # Loads variables from previous state of experiment
-        pickle_path =  "%s/%s/%s.pickle" % (SAVE_PATH,exp_name,exp_name)
+        pickle_path =  "%s/%s.pickle" % (SAVE_PATH,exp_name)
         with open(pickle_path) as f:
             loaded_var  = pickle.load(f)
         x = loaded_var
@@ -253,24 +275,24 @@ def initialize_exp(exp_name, vials):
     return start_time, OD_initial
 
 def save_var(exp_name, start_time, OD_initial):
-    pickle_path =  "%s/%s/%s.pickle" % (SAVE_PATH,exp_name,exp_name)
+    pickle_path =  "%s/%s.pickle" % (SAVE_PATH,exp_name)
     with open(pickle_path, 'w') as f:
         pickle.dump([start_time, OD_initial], f)
 
 def graph_data(vials, exp_name, file_name):
     for x in vials:
-        file_path =  "%s/%s/%s/vial%d_%s.txt" % (SAVE_PATH,exp_name,file_name,x,file_name)
+        file_path =  "%s/%s/vial%d_%s.txt" % (SAVE_PATH,file_name,x,file_name)
         data = np.genfromtxt(file_path, delimiter=',')
         plt.plot(data[:,0], data[:,1])
  ##      plt.ylim((-.05,.5))
-        plot_path =  "%s/%s/%s_graph/vial%d_%s.png" % (SAVE_PATH,exp_name,file_name,x,file_name)
+        plot_path =  "%s/%s_graph/vial%d_%s.png" % (SAVE_PATH,file_name,x,file_name)
         plt.savefig(plot_path)
         plt.clf()
 
 def calc_growth_rate(vials, exp_name,elapsed_time, OD_maintain):
     for x in vials:
         ## Grab Data and make setpoint
-        file_path =  "%s/%s/OD/vial%d_OD.txt" % (SAVE_PATH,exp_name,x)
+        file_path =  "%s/OD/vial%d_OD.txt" % (SAVE_PATH,x)
         OD_data = np.genfromtxt(file_path, delimiter=',')
         if np.shape(OD_data)[0] > 1010:
             time = OD_data[-1000:-1,0]
@@ -285,7 +307,7 @@ def calc_growth_rate(vials, exp_name,elapsed_time, OD_maintain):
             ## Calculate Average Growth for data
             average_data =((slope_data2[(median_filter_range/2):(np.size(slope_data2)-1-median_filter_range/2)])*3600)/OD_maintain
             ## Write Growth Rate to text
-            log_path = "%s/%s/growth_rate/vial%d_growth_rate.txt" % (SAVE_PATH,exp_name,x)
+            log_path = "%s/growth_rate/vial%d_growth_rate.txt" % (SAVE_PATH,x)
             text_file = open(log_path,"a+")
             text_file.write("%d,%s\n" %  (elapsed_time, np.average(average_data)))
             text_file.close()
