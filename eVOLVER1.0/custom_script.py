@@ -69,7 +69,7 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
 
     # Global paramemters for PID
     VOLUME =  config['morbidostat']['VOLUME']                             # Volume assumed for dilution events (mL)
-    INITIAL_WAIT = config['morbidostat']['INITIAL WAIT']                            # hrs, time for which will allow the cultures to grow without any pump intervention
+    INITIAL_WAIT = config['morbidostat']['INITIAL_WAIT']                            # hrs, time for which will allow the cultures to grow without any pump intervention
     DILUTION_OD = config['morbidostat']['DILUTION_OD']                          # OD at which dilutions start occurring
     MAX_OD = config['morbidostat']['MAX_OD']                               # High OD safeguard to prevent culture from leaving linear range
     DOUBLING_TIME = config['morbidostat']['DOUBLING_TIME']                         # User defined target doubling time
@@ -94,21 +94,22 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
     if elapsed_time > INITIAL_WAIT: # initial time for growth, hours
 
         #Load pump log (all recorded in vial 0 log across all 16, since pump time occurs simultaneously for all)
-        save_path = os.path.dirname(os.path.realpath(__file__))
-        file_path =  "%s/%s/pump_log/vial0_pump_log.txt" % (save_path,exp_name)
+        script_path = os.path.dirname(os.path.realpath(__file__))
+        save_path = os.getcwd()
+        file_path =  "%s/pump_log/vial0_pump_log.txt" % (save_path)
         data = np.genfromtxt(file_path, delimiter=',')
         last_pump = data[len(data)-1][0]
 
         #Load pump log (all recorded in vial 0 log across all 16, since pump time occurs simultaneously for all)
-        file_path =  "%s/%s/pump_log/vial00_pump_log.txt" % (save_path,exp_name)
+        file_path =  "%s/pump_log/vial00_pump_log.txt" % (save_path)
         data = np.genfromtxt(file_path, delimiter=',')
         last_pump = data[len(data)-1][0]
 
-        #confirmed_pump_path =  "%s/%s/pump_log/confirmed_pump_log.txt" % (save_path,exp_name)
+        #confirmed_pump_path =  "%s/pump_log/confirmed_pump_log.txt" % (save_path)
         #data = np.genfromtxt(confirmed_pump_path, delimiter=',')
         #last_confirmed_pump = data[len(data)-1][0]
 
-        od_path = "%s/%s/OD/vial%d_OD.txt" % (save_path,exp_name,int(GLOBAL_VIALS[0]))
+        od_path = "%s/OD/vial%d_OD.txt" % (save_path,int(GLOBAL_VIALS[0]))
         od_data = np.genfromtxt(od_path, delimiter=',')
         last_data_time = od_data[len(od_data)-1][0]
 
@@ -119,13 +120,13 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
         if (last_pump - last_confirmed_pump)*3600 > 0 and (elapsed_time - last_pump)*3600 > 120:
             print("Last pump:%f"%last_pump)
             print("Last confirmed pump:%f"%last_confirmed_pump)
-            message_file_path = "%s/%s/lastMessage.txt" % (save_path,exp_name)
+            message_file_path = "%s/lastMessage.txt" % (save_path)
             message_file = open(message_file_path,'r')
             MESSAGE = message_file.read().strip().split(',')
             message_file.close()
 
             # get vials that were diluted
-            diluted_vials_path = "%s/%s/diluted_vials.txt" % (save_path,exp_name)
+            diluted_vials_path = "%s/diluted_vials.txt" % (save_path)
             diluted_vials_file = open(diluted_vials_path,'r')
             diluted_vials = diluted_vials_file.read().strip().split(',')
             diluted_vials = list(filter(None,diluted_vials))
@@ -133,10 +134,10 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
 
             # obtains the first vial that underwent dilution
             if diluted_vials != []:
-                od_path = "%s/%s/OD/vial%d_OD.txt" % (save_path,exp_name,int(diluted_vials[0]))
+                od_path = "%s/OD/vial%d_OD.txt" % (save_path,int(diluted_vials[0]))
                 od_data = np.genfromtxt(od_path, delimiter=',')
             else:
-                od_path = "%s/%s/OD/vial%d_OD.txt" % (save_path,exp_name,int(GLOBAL_VIALS[0]))
+                od_path = "%s/OD/vial%d_OD.txt" % (save_path,int(GLOBAL_VIALS[0]))
                 od_data = np.genfromtxt(od_path, delimiter=',')
 
             # finds the index of the last dilution
@@ -172,7 +173,7 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                     eVOLVER.fluid_command(MESSAGE)
 
                     # Updates pump file
-                    pump_path =  "%s/%s/pump_log/vial00_pump_log.txt" % (save_path,exp_name)
+                    pump_path =  "%s/pump_log/vial00_pump_log.txt" % (save_path)
                     pump_file = open(pump_path,"a+")
                     pump_file.write("%f,%f\n" %  (elapsed_time,elapsed_time))
                     pump_file.close()
@@ -192,28 +193,28 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                 pid_pump_command_drug   = 0
 
                 # 1. Reads GR from last dilution time
-                gr_path =  "%s/%s/growth_rate/vial%d_growth_rate.txt" % (save_path,exp_name,x)
+                gr_path =  "%s/growth_rate/vial%d_growth_rate.txt" % (save_path,x)
                 gr_data = np.genfromtxt(gr_path, delimiter=',')
                 last_gr = gr_data[len(gr_data)-1][1]
 
                 # 2. Reads drug concentration from last dilution time
-                drug_log_path =  "%s/%s/drug_log/vial%d_drug_log.txt" % (save_path,exp_name,x)
+                drug_log_path =  "%s/drug_log/vial%d_drug_log.txt" % (save_path,x)
                 drug_log_data = np.genfromtxt(drug_log_path, delimiter=',')
                 drug_conc = drug_log_data[len(drug_log_data)-1][1]
 
                 # 3. Read and calculates the current OD (average over 5 measurements)
-                od_path =  "%s/%s/OD/vial%d_OD.txt" % (save_path,exp_name,x)
+                od_path =  "%s/OD/vial%d_OD.txt" % (save_path,x)
                 od_data = np.genfromtxt(od_path, delimiter=',')
 
                 # 4. Reads PID parameters from last round
-                pid_path = "%s/%s/PIDLog/vial%d_PIDLog.txt" % (save_path,exp_name,x)
+                pid_path = "%s/PIDLog/vial%d_PIDLog.txt" % (save_path,x)
                 pid_data = np.genfromtxt(pid_path, delimiter=',')
                 last_i_error = pid_data[len(pid_data)-1][2]
                 last_p_error = pid_data[len(pid_data)-1][1]
                 last_vial_pump = pid_data[len(pid_data)-1][0]
 
                 # 5. Reads the offset parameter from last round
-                offset_log_path = "%s/%s/offset_log/vial%d_offset.txt" % (save_path,exp_name,x)
+                offset_log_path = "%s/offset_log/vial%d_offset.txt" % (save_path,x)
                 offset_log_data = np.genfromtxt(offset_log_path, delimiter=',')
                 if len(offset_log_data) > 2:
                     pid_offset[x] = offset_log_data[len(offset_log_data)-1][1]
@@ -396,7 +397,7 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                     drug_file.close()
 
                 # 3. Updates a log file with an assortment of values for plotting
-                log_path = "%s/%s/logs/vial%d_log.txt" % (save_path,exp_name,x)
+                log_path = "%s/logs/vial%d_log.txt" % (save_path,x)
                 log_file = open(log_path, "a+")
                 log_file.write ("Vial %d\n" %(x))
                 log_file.write ("Average OD: %f\n" %(avg_od))
@@ -425,7 +426,7 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                 print ("pid_control: %f" %(pid_control))
 
                 # Vial13_log_file accounts for all Terminal output
-                log_path = "%s/%s/logs/vial13_log.txt" % (save_path,exp_name)
+                log_path = "%s/logs/vial13_log.txt" % (save_path)
                 log_file = open(log_path, "a+")
                 log_file.write ("Elapsed Time: %f" %(elapsed_time))
                 log_file.write ("Vial %d\n" %(x))
@@ -449,7 +450,7 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
 
             #Code to complement confirm last pump.
             """
-            message_path =  "%s/%s/lastMessage.txt" % (save_path,exp_name)
+            message_path =  "%s/lastMessage.txt" % (save_path)
             text_file = open(message_path,"w")
             for index in range(0,48):
                 if index != 47:
@@ -458,7 +459,7 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                     text_file.write(MESSAGE[index])
             text_file.close()
 
-            diluted_vials_path =  "%s/%s/diluted_vials.txt" % (save_path,exp_name)
+            diluted_vials_path =  "%s/diluted_vials.txt" % (save_path)
             text_file = open(diluted_vials_path,"w")
             for item in diluted_vials:
                 text_file.write(item+',')
@@ -466,27 +467,50 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
             """
 
             # Updates pump file
-            pump_path =  "%s/%s/pump_log/vial00_pump_log.txt" % (save_path,exp_name)
+            pump_path =  "%s/pump_log/vial00_pump_log.txt" % (save_path)
             pump_file = open(pump_path,"a+")
             pump_file.write("%f,%f\n" %  (elapsed_time,elapsed_time))
             pump_file.close()
 
 def turbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
+    
+    ## Defining variables for turbidostat
+    
     # Set Stir rates
     MESSAGE = "10,10,10,10   ,10,10,10,10,  10,10,10,10,  10,10,10,10,"
     eVOLVER_module.stir_rate(MESSAGE)
 
-    control = np.power(2,range(0,32))
     # Calibrated flow rates
-    flow_rate = 1.0 #ml/sec
+    flow_rate = config['turbidostat']['flow_rate'] #ml/sec
 
     # Global paramemters for turbidostat
-    VOLUME =  30.0                              # Volume assumed for dilution events (mL)
-    INITIAL_WAIT = 1                            # hrs, time for which no pumps will be running
-    DILUTION_OD = 0.80                          # OD at which dilutions start occurring
-    MAX_OD = 1.4                               # High OD safeguard to prevent culture from leaving linear range
-    VOLUME_PER_DILUTION = 6                     # mLs per dilution event
-    TIME_BETWEEN_DILUTIONS = 5                  # minimum time between dilution events, mins
+    VOLUME =  config['turbidostat']['VOLUME']                                   # Volume assumed for dilution events (mL)
+    INITIAL_WAIT = config['turbidostat']['INITIAL_WAIT']                        # hrs, time for which no pumps will be running
+    DILUTION_OD = config['turbidostat']['DILUTION_OD']                          # OD at which dilutions start occurring
+    MAX_OD = config['turbidostat']['MAX_OD']                                    # High OD safeguard to prevent culture from leaving linear range
+    VOLUME_PER_DILUTION = config['turbidostat']['VOLUME_PER_DILUTION']          # mLs per dilution event
+    TIME_BETWEEN_DILUTIONS = config['turbidostat']['TIME_BETWEEN_DILUTIONS']    # minimum time between dilution events, mins
+
+    ### PUMP ASSIGNMENTS ###
+    ### Please note that the pumps need to be assigned to vials correctly, especially when switching
+    ###  between morbidostat and turbidostat mode. 
+
+    
+    ### Pure turbidostat mode
+    ###       0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
+    ###       ______________________________________________________________
+    media  = [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10, 11, 12, 13, 14, 15]
+    efflux = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+    if config['turbidostat']['pump_assignment'] == 2:
+        ### Turbidostat in vials 8-11 with remaining pumps (usually when 0-7 are morbidostat)
+        ###       0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
+        ###       ______________________________________________________________
+        media  = [32, 32, 32, 32, 32, 32, 32, 32, 24, 25, 26, 27, 32, 32, 32, 32]
+        efflux = [32, 32, 32, 32, 32, 32, 32, 32, 28, 29, 30, 31, 32, 32, 32, 32]
+    elif config['turbidostat']['pump_assignment'] != 1:
+        print('Invalid pump assignment choice. Reverting to default configuration')
+
+    control = np.power(2,range(0,32))
 
     if elapsed_time > INITIAL_WAIT: # initial time for growth, hours
     
@@ -494,11 +518,11 @@ def turbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
             #Load pump log
             script_path = os.path.dirname(os.path.realpath(__file__))
             save_path = os.getcwd()
-            file_path =  "%s/%s/pump_log/vial%d_pump_log.txt" % (save_path,exp_name,x)
+            file_path =  "%s/pump_log/vial%d_pump_log.txt" % (save_path,x)
             data = np.genfromtxt(file_path, delimiter=',')
             last_pump = data[len(data)-1][0]
 
-            od_path = "%s/%s/OD/vial%d_OD.txt" % (save_path,exp_name,x)
+            od_path = "%s/OD/vial%d_OD.txt" % (save_path,x)
             od_data = np.genfromtxt(od_path, delimiter=',')
             last_data_time = od_data[len(od_data)-1][0]
             try:
@@ -520,15 +544,16 @@ def turbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                 od_window =   od_data[idx+10:,1]
                 time_window = od_data[idx+10:,0]
 
-                # resets time window to 0 for the first data points
-                # makes the "A" constant in exp_func more meaningful
-                time_window = time_window - time_window[0]
-
                 # Removes NaNs and infs
                 time_window = time_window[~np.isnan(od_window)]
                 od_window = od_window[~np.isnan(od_window)]
                 time_window = time_window[~np.isinf(od_window)]
                 od_window = od_window[~np.isinf(od_window)]
+
+                # resets time window to 0 for the first data points
+                # makes the "A" constant in exp_func more meaningful
+                time_window = time_window - time_window[0]
+   
 
                 # Calculates OD for a given vial (across 5 measuremMESSAGE_no_drugents)
                 # to ensure that OD is actually above dilution OD rather than an outlier
@@ -557,17 +582,17 @@ def turbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                     print ("Double Dilution Occurred; num_dils = 2")
 
                 # Sends dilution command to RaspberryPi
-                MESSAGE = "%s,0,%f," % ("{0:b}".format(control[x+16]+control[x+20]) , num_dils * VOLUME_PER_DILUTION)
+                MESSAGE = "%s,0,%f," % ("{0:b}".format(control[media[x]]+control[efflux[x]]) , num_dils * VOLUME_PER_DILUTION)
                 eVOLVER_module.fluid_command(MESSAGE, x, elapsed_time, 0, exp_name, num_dils * VOLUME_PER_DILUTION, 'n')
 
                 # 1. Update GR file with current GR
-                gr_path =  "%s/%s/growth_rate/vial%d_growth_rate.txt" % (save_path,exp_name,x)
+                gr_path =  "%s/growth_rate/vial%d_growth_rate.txt" % (save_path,x)
                 gr_file = open(gr_path,"a+")
                 gr_file.write("%f,%s\n" %  (elapsed_time, growth_rate))
                 gr_file.close()
 
                 # 2. Updates a log file with an assortment of values for plotting
-                log_path = "%s/%s/logs/vial%d_log.txt" % (save_path,exp_name,x)
+                log_path = "%s/logs/vial%d_log.txt" % (save_path,x)
                 log_file = open(log_path, "a+")
                 log_file.write ("Vial %d\n" %(x))
                 log_file.write ("Average OD: %f\n" %(avg_od))
@@ -587,7 +612,7 @@ def turbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
                 eVOLVER_module.fluid_command(CLEAN_MESSAGE, 0, elapsed_time, TIME_BETWEEN_DILUTIONS *60, exp_name, 8,'y')
 
                 # Updates pump file             
-                pump_path =  "%s/%s/pump_log/vial%d_pump_log.txt" % (save_path,exp_name,x)
+                pump_path =  "%s/pump_log/vial%d_pump_log.txt" % (save_path,x)
                 pump_file = open(pump_path,"a+")
                 pump_file.write("%f,%f\n" %  (elapsed_time,num_dils*VOLUME_PER_DILUTION))
                 pump_file.close()
@@ -602,8 +627,8 @@ def lin_func(x,a,b):
 
 def measure_growth_rate(x, save_path, exp_name):
     ## Load files from proper directories
-    ODPath =  "%s/%s/OD/vial%d_OD.txt" % (save_path,exp_name,x)
-    pump_path =  "%s/%s/pump_log/vial0_pump_log.txt" % (save_path,exp_name)
+    ODPath =  "%s/OD/vial%d_OD.txt" % (save_path,x)
+    pump_path =  "%s/pump_log/vial0_pump_log.txt" % (save_path)
     ODData = np.genfromtxt(ODPath, delimiter=',')
     pump_data = np.genfromtxt(pump_path, delimiter=',')
 
