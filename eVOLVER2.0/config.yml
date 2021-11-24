@@ -1,39 +1,35 @@
 {
-  #set new name for each experiment, otherwise files will be overwritten
-  'EXP_NAME' : '2021-11-19_ZZusingSH_TEST',
-  'EVOLVER_IP' : '10.0.0.3',
-  'EVOLVER_PORT' : 8081,
   # Vials that are in use
   'VIALS' : [8,9,10,11],
+  # if using a different mode, name your function as the OPERATION_MODE variable
+  'OPERATION_MODE' : 'morbidostat',
 
 
-  ##### Identify pump calibration files, define initial values for temperature, stirring, volume, power settings
+  'EVOLVER_IP' : '10.0.0.3',
+  'EVOLVER_PORT' : 8081,
+
+  ##### Define initial values for temperature, stirring, power settings, volume
 
   'TEMP_INITIAL' : [30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30], #degrees C
-
   'STIR_INITIAL' : [9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9],
-
   'POWER_INITIAL' : [4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095],
 
+  ##### Define calibration file for pump calibration
   'VOLUME' :  30, #mL, determined by vial cap straw length
   'PUMP_CAL_FILE' : 'pump_cal.txt', #tab delimited, mL/s with 16 influx pumps on first row, etc.
-  'OPERATION_MODE' : 'morbidostat', # TURBIDOSTAT AND CHEMOSTAT FUNCTION HAS BEEN REMOVED FROM THIS VERSION
-  # if using a different mode, name your function as the OPERATION_MODE variable
 
+  ##### End of global parameters #####
+
+
+  ##### Morbidostat parameters #####
   'morbidostat' : {
     # Global paramemters for PID
-    'VOLUME' : 28.0,                              # Volume assumed for dilution events (mL)
     'INITIAL_WAIT' : 1,                            # hours, time for initial growth
-    'DILUTION_OD' : 0.4,                         # OD at which dilutions start occurring
+    'DILUTION_OD' : 0.4,                           # OD at which dilutions start occurring
     'MAX_OD' : 1.5,                                # High OD safeguard to prevent culture from leaving linear range
-    'SUPER_OD' : 2.0,
+    'SUPER_OD' : 2.0,                              # Extra high OD safeguard to prevent culture from leaving linear range
     'DOUBLING_TIME' : 6.0,                         # User defined target doubling time
-    ##'TARGET_GR' : math.log(2.0)/DOUBLING_TIME     # Calculated based off the user defined doubling time
     'STEPS_PER_HOUR' : 2,                          # User defined number of dilution events per hour. Volumes are adjusted accordingly
-    ##'DILUTION_RATE' : float(VOLUME / DOUBLING_TIME) # mL / hour
-    ##'VOLUME_PER_DILUTION' : float(DILUTION_RATE/ STEPS_PER_HOUR)
-    ##'TIME_BETWEEN_DILUTIONS' : float(60/STEPS_PER_HOUR) #minutes
-    ##'TIME_OUT' : VOLUME_PER_DILUTION + 3          # seconds to run pump for output
 
     # PID Parameters
     # Kp, Ki, Kd may need to be changed for different selections
@@ -42,22 +38,15 @@
     'Kd' :         [0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2,  0.2  ],
     'pid_offset' : [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0  ],
   },
+  
 
+  ##### Turbidostat parameters #####
   'turbidostat' : {
-    ##### USER DEFINED VARIABLES #####
+    'n_curves' : 0,      #set to 0 to never stop, or a natural integer value to stop diluting after certain number of growth curves
+    'OD_values_to_average' : 6,     # Number of values to calculate the OD average
 
-    'stop_after_n_curves' : 'inf', #set to inf to never stop, or integer value to stop diluting after certain number of growth curves
-    'OD_values_to_average' : 6,  # Number of values to calculate the OD average
-
-    'lower_thresh' : [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], #to set all vials to the same value, creates 16-value list
-    'upper_thresh' : [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4], #to set all vials to the same value, creates 16-value list
-
-    #Alternatively, use 16 value list to set different thresholds, use 9999 for vials not being used
-    #lower_thresh : [0.2, 0.2, 0.3, 0.3, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999]
-    #upper_thresh : [0.4, 0.4, 0.4, 0.4, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999, 9999]
-
-
-    ##### END OF USER DEFINED VARIABLES #####
+    'lower_thresh' : [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    'upper_thresh' : [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4],
 
 
     ##### Turbidostat Settings #####
@@ -69,8 +58,9 @@
     ##### End of Turbidostat Settings #####
   },
 
+
+  ##### Chemostat parameters #####
   'chemostat' : {
-    ##### USER DEFINED VARIABLES #####
     'start_OD' : 0, # ~OD600, set to 0 to start chemostate dilutions at any positive OD
     'start_time' : 0, #hours, set 0 to start immediately
     # Note that script uses AND logic, so both start time and start OD must be surpassed
@@ -79,9 +69,6 @@
 
     'rate_config' : [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
     #UNITS of 1/hr, NOT mL/hr, rate : flowrate/volume, so dilution rate ~ growth rate, set to 0 for unused vials
-
-
-    ##### END OF USER DEFINED VARIABLES #####
 
 
     ##### Chemostat Settings #####
