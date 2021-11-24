@@ -16,8 +16,10 @@ with open('config.yml') as f:
 # current options are: 'turbidostat' or 'morbidostat'
 FUNCTION = config['FUNCTION']
 
-# name your experiment here
-EXP_NAME = config['EXP_NAME']
+# Obtains the experiment name based on the current directory
+current_dir = os.getcwd()
+positions = [pos for pos, char in enumerate(current_dir) if char == '/']
+EXP_NAME = current_dir[positions[len(positions)-1]+1:len(current_dir)]
 
 #Where the GUI is called and widgets are placed
 class make_GUI:
@@ -28,8 +30,8 @@ class make_GUI:
         home = Frame(note)
         note.add(home, text = "Home")
 
-        script_path = os.path.dirname(os.path.realpath(__file__))
-        save_path = os.getcwd()
+        #script_path = os.path.dirname(os.path.realpath(__file__))
+        #save_path = os.getcwd()
         tabArray = [ ]
 
         for x in vials:
@@ -69,7 +71,7 @@ def update_eVOLVER():
     global OD_data, temp_data
     ##Read and record OD
     elapsed_time = round((time.time() - start_time)/3600,4)
-    print "Time: %f Hours" % elapsed_time
+    print "%s: %f Hours" % (EXP_NAME, elapsed_time)
     OD_data = eVOLVER_module.read_OD(vials)
     if OD_data == 'empty':
         print "Data Empty! Skipping data log..."
