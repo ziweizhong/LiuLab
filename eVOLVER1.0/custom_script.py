@@ -331,7 +331,7 @@ def morbidostat (current_OD_data, temp_data, vials, elapsed_time, exp_name):
 
                 # If the machine has been acting normally, if the growth rate dips below the target growth rate,
                 # a new offset is calculated and used for future rounds of control
-                if elapsed_time > 72 and p_err < 0 and last_p_error > 0:
+                if p_err < 0 and last_p_error > 0:
                     #print ("OFFSET LOG DIAGNOSTIC elapsed_time: %f" %(elapsed_time))
                     #print ("OFFSET LOG DIAGNOSTIC p_err: %f" %(p_err))
                     #print ("OFFSET LOG DIAGNOSTIC last_p_error: %f" %(last_p_error))
