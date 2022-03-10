@@ -12,6 +12,9 @@
 - added additional operational mode for morbidostat
 - added GLOBAL_VIALS parameter to set active vials
 
+2022-03-10 change log
+- added a calculation of media use
+
 Possible things to update in the future:
 - robust curve fitting
 """
@@ -488,10 +491,20 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                 log_file.close()
                 """
 
-            print(MESSAGE[0:4])
-            print(MESSAGE[16:20])
-            print(MESSAGE[32:36])
+            # Outputs the media use per vial and total media use per media condition.
+            #  Media 1 represents media used by pumps 0 to 15
+            #  Media 2 represents media used by pumps 32 to 47
+            #  Please note: pumps 16 to 31 are efflux pumps. 
+            try:
+                print("Estimated media 1 use (mL): " + str(["%.1f" % float(elem) for elem in MESSAGE[mstat_vials[0]:mstat_vials[len(mstat_vials)-1]+1]]))
+                print("Estimated total media 1 use (mL): %.1f" % sum([int(elem) for elem in MESSAGE[mstat_vials[0]:mstat_vials[len(mstat_vials)-1]+1]]))
+                print("Estimated media 2 use (mL): " + str(["%.1f" % float(elem) for elem in MESSAGE[32+mstat_vials[0]:32+mstat_vials[len(mstat_vials)-1]+1]]))
+                print("Estimated total media 2 use (mL): %.1f" % sum([int(elem) for elem in MESSAGE[32+mstat_vials[0]:32+mstat_vials[len(mstat_vials)-1]+1]]))
+                print(["%.1f" % float(elem) for elem in MESSAGE[16+mstat_vials[0]:16+mstat_vials[len(mstat_vials)-1]+1]])
+            except:
+                print(traceback.format_exc())
 
+            # Saves the last dilution message to pumps in case the message needs to be sent again if a dilution event was not detected
             message_path =  "%s/lastMessage.txt" % (SAVE_PATH)
             text_file = open(message_path,"w")
             for index in range(0,48):
@@ -501,18 +514,20 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                     text_file.write(MESSAGE[index])
             text_file.close()
 
+            # Saves the vials that were suppposed to be diluted. Script will check the first of the noted vials for dilution after 2 minutes
             diluted_vials_path =  "%s/diluted_vials.txt" % (SAVE_PATH)
             text_file = open(diluted_vials_path,"w")
             for item in diluted_vials:
                 text_file.write(item+',')
             text_file.close()
 
+            # Prints a message that dilution occurred and concurrently sends the dilution command if any pumps need to be run
             if MESSAGE != ['--'] * 48:
                 print("Dilution performed!")
                 eVOLVER.fluid_command(MESSAGE)
 
 
-                # Updates pump file
+            # Updates pump file
             pump_path =  "%s/pump_log/vial00_pump_log.txt" % (SAVE_PATH)
             pump_file = open(pump_path,"a+")
             pump_file.write("%f,%f\n" %  (elapsed_time,elapsed_time))
