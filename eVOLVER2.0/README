@@ -40,3 +40,7 @@ custom_script.py change log
 - added initial power levels
 - added additional operational mode for morbidostat
 - added GLOBAL_VIALS parameter to set active vials
+
+2022-03-10
+- added email support branch off of master
+- added message regarding media use per dilution event
