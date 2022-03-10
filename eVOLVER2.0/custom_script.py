@@ -14,7 +14,7 @@
 
 2022-03-10 change log
 - added email support when errors occur
-- outputs media usage at each dilution time point
+- outputs media usage at the end
 
 Possible things to update in the future:
 - robust curve fitting
@@ -73,9 +73,9 @@ GLOBAL_VIALS = config['VIALS']
 PORT = 465
 SMTP_SERVER = "smtp.gmail.com"
 SENDER_EMAIL = "*****@gmail.com"
-RECEIVER_EMAIL = "*****@*****.***"
+RECEIVER_EMAIL = "<YOUR EMAIL HERE>"
 #RECEIVER_EMAIL = config['RECEIVER_EMAIL']
-EMAIL_PASSWORD = "*****"
+EMAIL_PASSWORD = "<SENDER EMAIL PASSWORD>"
 
 ##### END OF USER DEFINED GENERAL SETTINGS #####
 
@@ -195,12 +195,13 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                         pump_file.close()
             except Exception as e:
                 context = ssl.create_default_context()
-                message = "dilution check error!\n" + e
+                email_message = "dilution check error!\n" + str(traceback.format_exc())
                 with smtplib.SMTP_SSL(SMTP_SERVER,PORT,context=context) as server:
                     server.login(SENDER_EMAIL,EMAIL_PASSWORD)
-                    server.sendmail(SENDER_EMAIL,RECEIVER_EMAIL,message)
+                    server.sendmail(SENDER_EMAIL,RECEIVER_EMAIL,email_message)
                 
                 print("Dilution check error!!\n Alert Email Sent to %s"%(RECEIVER_EMAIL))
+                print(traceback.format_exc())
                 # write current time as last confirmed pump
                 confirmed_pump_file = open(confirmed_pump_path,'a+')
                 confirmed_pump_file.write("%f,0,0\n"%(elapsed_time))
@@ -525,10 +526,10 @@ def morbidostat(eVOLVER, input_data, vials, elapsed_time):
                 except Exception as e:
                     try:
                         context = ssl.create_default_context()
-                        message = "Calculation error for Vial " + str(x) + "\n" + str(traceback.format_exc())
+                        email_message = "Calculation error for Vial " + str(x) + "\n" + str(traceback.format_exc())
                         with smtplib.SMTP_SSL(SMTP_SERVER,PORT,context=context) as server:
                             server.login(SENDER_EMAIL,EMAIL_PASSWORD)
-                            server.sendmail(SENDER_EMAIL,RECEIVER_EMAIL,message)
+                            server.sendmail(SENDER_EMAIL,RECEIVER_EMAIL,email_message)
                         
                         print("Calculation error for Vial %d\nAlert Email Sent to %s"%(x,RECEIVER_EMAIL))
                         print(traceback.format_exc())
