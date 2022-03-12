@@ -1,0 +1,4 @@
+This folder contains the files that were used to enable the ability to resume eVOLVER experiments upon an unexpected shutdown or restart (such as app update or power loss)
+You will need to ensure that startup.sh is run on startup, either via adding it to ~/.config/autostart/autostart.desktop, crontab, or some other method
+
+Additionally, eVOLVER experiments should be called not by running "python eVOLVER.py", but rather using the accessory files run_ev1/2.sh, which will output the cwd to a file which will persist if the eVOLVER.py script is not terminated by the user or a completion point
